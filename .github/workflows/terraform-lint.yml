@@ -1,0 +1,26 @@
+name: Terraform linting pipeline
+on: [push]
+jobs:
+  pipeline:
+    name: Run Terraform
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.2.2
+
+      - name: terraform_format
+        run:  terraform fmt -recursive -check -diff
+
+      - name: terraform_init
+        run: terraform init -backend=false
+
+      - name: terraform_validate
+        run: terraform validate
