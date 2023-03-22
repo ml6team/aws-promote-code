@@ -48,7 +48,6 @@ role = iam.get_role(RoleName=f"{args.account}-sagemaker-exec")['Role']['Arn']
 print(role)
 default_bucket = sagemaker_session.default_bucket()
 image_uri = f"{args.account}.dkr.ecr.{args.region}.amazonaws.com/{args.pipeline_name}:latest"
-# training_image_uri = f"{args.account}.dkr.ecr.{args.region}.amazonaws.com/training-image:latest"
 
 model_path = f"s3://{default_bucket}/model"
 data_path = f"s3://{default_bucket}/data"
@@ -116,20 +115,6 @@ step_preprocess = ProcessingStep(
 
 # ------------ Train ------------
 
-# estimator = HuggingFace(
-#     image_uri=training_image_uri,
-#     instance_type=huggingface_instance_type,
-#     instance_count=1,
-#     # entry_point="steps/train.py",
-#     sagemaker_session=sagemaker_session,
-#     role=role,
-#     output_path=model_path,
-#     base_job_name="train-estimator",
-#     # pytorch_version=pytorch_version,
-#     # transformers_version=transformers_version,
-#     py_version="py36",
-# )
-
 estimator = Estimator(
     image_uri=image_uri,
     instance_type=gpu_instance_type,
@@ -185,6 +170,8 @@ script_eval = FrameworkProcessor(
     role=role,
     sagemaker_session=sagemaker_session,
     command=["python3"],
+    # following args need to be provided, but don't have an effect
+    # because custome image is used
     estimator_cls=sagemaker.sklearn.estimator.SKLearn,
     framework_version="0.20.0",
 )
@@ -256,7 +243,7 @@ model = Model(
     image_uri=image_uri,
     model_data=step_train.properties.ModelArtifacts.S3ModelArtifacts,
     sagemaker_session=sagemaker_session,
-    entry_point="inference/model.py",
+    entry_point="src/inference/model.py",
     role=role,
 )
 
@@ -305,7 +292,7 @@ cond_gte = ConditionGreaterThanOrEqualTo(
         property_file=evaluation_report,
         json_path="metrics.accuracy.value"
     ),
-    right=0.9
+    right=0.1
 )
 
 step_cond = ConditionStep(

@@ -8,12 +8,12 @@ from torch.utils.data import Dataset
 
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
+import config
 
-model_name = "distilbert-base-uncased"
 
 
 class MyTokenizer:
-    def __init__(self, model_name=model_name) -> None:
+    def __init__(self, model_name=config.MODEL_NAME) -> None:
         self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
 
@@ -65,7 +65,7 @@ def load_num_labels(label_dir):
 
 def get_model(num_labels):
     return AutoModelForSequenceClassification.from_pretrained(
-        model_name,
+        config.MODEL_NAME,
         num_labels=num_labels,
     )
     

@@ -5,9 +5,6 @@ import logging
 
 from utils.helper import MyTokenizer, Encoder
 
-model_name = "distilbert-base-uncased"
-
-
 def preprocess():
     logging.warning('fetching dataset')
     df_train = pd.read_csv(os.path.join(
@@ -31,7 +28,7 @@ def preprocess():
     np.save(os.path.join("/opt/ml/processing/output/test", "x_test.npy"), x_test)
     np.save(os.path.join("/opt/ml/processing/output/test", "y_test.npy"), y_test)
     
-    # TODO save entire (huggingface) dataset
+    # TODO save as (huggingface) dataset
     
     # save num_of_labels
     np.save(os.path.join("/opt/ml/processing/output/labels", "num_labels.npy"), encoder.num_cat)

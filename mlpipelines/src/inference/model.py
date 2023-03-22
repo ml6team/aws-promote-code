@@ -1,13 +1,11 @@
 import os
 import json
-import logging
-import joblib
 
 import torch
 from sagemaker_containers.beta.framework import worker, encoders
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-model_name = "distilbert-base-uncased"
+from utils.helper import get_model, MyTokenizer
+from utils import config
 
 
 def input_fn(input_data, content_type):
@@ -35,16 +33,17 @@ def output_fn(prediction, accept):
 
 def predict_fn(input_data, model):
     """Process input data"""
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = MyTokenizer()
     input = tokenizer(input_data, return_tensors='pt')
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model.to(device)
+    input.to(device)
     return model(**input)
+# TODO convert output to original categories
 
 
 def model_fn(model_dir):
     """Deserialize/load fitted model"""
-    model = AutoModelForSequenceClassification.from_pretrained(
-        model_name,
-        num_labels=40,
-    )
+    model = get_model(num_labels=40)
     model.load_state_dict(torch.load(os.path.join(model_dir, "model.joblib")))
     return model
