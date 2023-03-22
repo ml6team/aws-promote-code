@@ -28,12 +28,14 @@ if __name__ == "__main__":
 
     parser.add_argument('--account', type=str, default="101436505502")
     parser.add_argument('--region', type=str, default="eu-west-3")
-    parser.add_argument('--model_package_name', type=str, default="training-pipelineModelGroup")
+    parser.add_argument('--model_package_name', type=str,
+                        default="training-pipelineModelGroup")
     parser.add_argument('--model_version', type=int, default=1)
     args = parser.parse_args()
 
     iam = boto3.client('iam')
-    role_arn = iam.get_role(RoleName=f'{args.account}-sagemaker-exec')['Role']['Arn']
+    role_arn = iam.get_role(
+        RoleName=f'{args.account}-sagemaker-exec')['Role']['Arn']
 
     model_package_arn = f"arn:aws:sagemaker:{args.region}:{args.account}:" \
                         f"model-package/{args.model_package_name}/{str(args.model_version)}"

@@ -25,6 +25,8 @@ from sagemaker.huggingface import HuggingFaceProcessor, HuggingFace
 from sagemaker.workflow.pipeline_experiment_config import PipelineExperimentConfig
 from sagemaker.workflow.execution_variables import ExecutionVariables
 from sagemaker.workflow.functions import Join
+from sagemaker.workflow.model_step import ModelStep
+
 from sagemaker.workflow.pipeline_context import PipelineSession
 
 
@@ -36,7 +38,7 @@ args = parser.parse_args()
 
 region = boto3.Session(region_name=args.region).region_name
 
-sagemaker_session = PipelineSession()#sagemaker.session.Session()
+sagemaker_session = PipelineSession()  # sagemaker.session.Session()
 
 # try:
 #     role = sagemaker.get_execution_role()
@@ -62,7 +64,7 @@ transformers_version = "4.11.0"  # "4.4"
 
 epoch_count = ParameterInteger(
     name="epochs",
-    default_value=1
+    default_value=2
 )
 batch_size = ParameterInteger(
     name="batch_size",
@@ -84,7 +86,7 @@ script_preprocess = FrameworkProcessor(
 )
 
 preprocess_step_args = script_preprocess.run(
-     inputs=[
+    inputs=[
         ProcessingInput(
             source=os.path.join(data_path, "train.csv"),
             destination="/opt/ml/processing/input/train",
@@ -228,39 +230,43 @@ model_metrics = ModelMetrics(
 )
 
 
-# scaler_model = SKLearnModel(
-#     model_data=scaler_model_data,
-#     role=role,
-#     sagemaker_session=sagemaker_session,
-#     entry_point="inference/preprocess.py",
-#     # framework_version=sklearn_version,
-#     name="preprocess_model",
-# )
-
-
 model = Model(
-    name="custom_model",
+    name="text-classification-model",
     image_uri=image_uri,
     model_data=step_train.properties.ModelArtifacts.S3ModelArtifacts,
     sagemaker_session=sagemaker_session,
-    entry_point="src/inference/model.py",
+    source_dir="src",
+    entry_point="model.py",
     role=role,
 )
 
 # combine preprocessor and model into one pipeline-model
-pipeline_model = PipelineModel(
-    models=[model], role=role, sagemaker_session=sagemaker_session
-)
+# pipeline_model = PipelineModel(
+#     models=[model], role=role, sagemaker_session=sagemaker_session
+# )
 
-step_register = RegisterModel(
+# step_register = RegisterModel(
+#     name="register-model",
+#     model=model,
+#     content_types=["text/csv"],
+#     response_types=["text/csv"],
+#     inference_instances=[gpu_instance_type, gpu_instance_type],
+#     transform_instances=[gpu_instance_type],
+#     model_package_group_name=model_package_group_name,
+#     model_metrics=model_metrics,
+# )
+
+
+step_register = ModelStep(
     name="register-model",
-    model=pipeline_model,
-    content_types=["text/csv"],
-    response_types=["text/csv"],
-    inference_instances=["ml.t2.medium", "ml.m5.large"],
-    transform_instances=["ml.m5.large"],
-    model_package_group_name=model_package_group_name,
-    model_metrics=model_metrics,
+    step_args=model.register(
+        content_types=["text/csv"],
+        response_types=["text/csv"],
+        inference_instances=[gpu_instance_type, gpu_instance_type],
+        transform_instances=[gpu_instance_type],
+        model_package_group_name=model_package_group_name,
+        model_metrics=model_metrics,
+    )
 )
 
 # ------------ Deploy (not used in pipeline) ------------

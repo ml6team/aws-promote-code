@@ -1,3 +1,4 @@
+"""Inference Code for model"""
 import os
 import json
 
@@ -38,8 +39,10 @@ def predict_fn(input_data, model):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model.to(device)
     input.to(device)
-    return model(**input)
-# TODO convert output to original categories
+    outputs = model(**input)
+    y_pred = torch.argmax(outputs.logits.cpu(), dim=1)
+    return [config.MEDICAL_CATEGORIES[i.item()] for i in y_pred]
+
 
 
 def model_fn(model_dir):

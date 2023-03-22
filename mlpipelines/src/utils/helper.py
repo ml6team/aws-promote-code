@@ -1,15 +1,13 @@
-"""General helper methods for Sagemaker Pipeline"""
+"""General helper methods for Sagemaker Pipeline steps"""
 import os
 import pandas as pd
 import numpy as np
 
 import torch
 from torch.utils.data import Dataset
-
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-import config
-
+from utils import config
 
 
 class MyTokenizer:
@@ -38,7 +36,7 @@ class Encoder:
 
 
 class MyDataset(Dataset):
-    def __init__(self, x, y):
+    def __init__(self, x, y) -> None:
         self.x = torch.tensor(x)
         self.y = torch.tensor(y)
 
@@ -52,20 +50,21 @@ class MyDataset(Dataset):
 def load_dataset(dir, file_extension: str):
     allowed_extensions = ["train", "test"]
     if file_extension not in allowed_extensions:
-        raise ValueError("Invalid extension. Expected one of: %s" % allowed_extensions)
+        raise ValueError("Invalid extension. Expected one of: %s" %
+                         allowed_extensions)
 
     x_train = np.load(os.path.join(dir, f"x_{file_extension}.npy"))
     y_train = np.load(os.path.join(dir, f"y_{file_extension}.npy"))
 
     return MyDataset(x_train, y_train)
 
-def load_num_labels(label_dir):
+
+def load_num_labels(label_dir: str) -> int:
     return np.load(os.path.join(label_dir, 'num_labels.npy'))[0]
 
 
-def get_model(num_labels):
+def get_model(num_labels: int):
     return AutoModelForSequenceClassification.from_pretrained(
         config.MODEL_NAME,
         num_labels=num_labels,
     )
-    
