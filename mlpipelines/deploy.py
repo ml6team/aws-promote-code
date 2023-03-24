@@ -20,7 +20,7 @@ def deploy(role_arn: str, model_package_arn: str) -> None:
     model = ModelPackage(role=role_arn, model_package_arn=model_package_arn,
                          sagemaker_session=sagemaker_session)
 
-    model.deploy(initial_instance_count=1, instance_type='ml.m5.large')
+    model.deploy(initial_instance_count=1, instance_type='ml.g4dn.xlarge')
 
 
 if __name__ == "__main__":

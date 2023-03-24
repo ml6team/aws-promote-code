@@ -49,7 +49,8 @@ role = iam.get_role(RoleName=f"{args.account}-sagemaker-exec")['Role']['Arn']
 
 print(role)
 default_bucket = sagemaker_session.default_bucket()
-image_uri = f"{args.account}.dkr.ecr.{args.region}.amazonaws.com/{args.pipeline_name}:latest"
+train_image_uri = f"{args.account}.dkr.ecr.{args.region}.amazonaws.com/training-image:latest"
+inference_image_uri = f"{args.account}.dkr.ecr.{args.region}.amazonaws.com/inference-image:latest"
 
 model_path = f"s3://{default_bucket}/model"
 data_path = f"s3://{default_bucket}/data"
@@ -57,14 +58,14 @@ model_package_group_name = f"{args.pipeline_name}ModelGroup"
 pipeline_name = args.pipeline_name
 
 gpu_instance_type = "ml.g4dn.xlarge"
-pytorch_version = "1.6.0"  # "1.6"
-transformers_version = "4.11.0"  # "4.4"
+pytorch_version = "1.6.0"
+transformers_version = "4.11.0"
 
 # ------------ Pipeline Parameters ------------
 
 epoch_count = ParameterInteger(
     name="epochs",
-    default_value=2
+    default_value=1
 )
 batch_size = ParameterInteger(
     name="batch_size",
@@ -73,16 +74,16 @@ batch_size = ParameterInteger(
 
 # ------------ Preprocess ------------
 
-script_preprocess = FrameworkProcessor(
-    instance_type="ml.t3.medium",
-    image_uri=image_uri,
+
+script_preprocess = HuggingFaceProcessor(
+    instance_type=gpu_instance_type,
+    image_uri=train_image_uri,
     instance_count=1,
     base_job_name="preprocess-script",
     role=role,
     sagemaker_session=sagemaker_session,
-    command=["python3"],
-    estimator_cls=sagemaker.sklearn.estimator.SKLearn,
-    framework_version="0.20.0",
+    transformers_version=transformers_version,
+    pytorch_version=pytorch_version,
 )
 
 preprocess_step_args = script_preprocess.run(
@@ -118,7 +119,7 @@ step_preprocess = ProcessingStep(
 # ------------ Train ------------
 
 estimator = Estimator(
-    image_uri=image_uri,
+    image_uri=train_image_uri,
     instance_type=gpu_instance_type,
     instance_count=1,
     source_dir="src",
@@ -137,8 +138,6 @@ estimator.set_hyperparameters(
 step_train = TrainingStep(
     name="train-model",
     estimator=estimator,
-    description="train-model1",
-    display_name="train-model2",
     inputs={
         "train": TrainingInput(
             s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
@@ -166,7 +165,7 @@ step_train = TrainingStep(
 
 script_eval = FrameworkProcessor(
     instance_type=gpu_instance_type,
-    image_uri=image_uri,
+    image_uri=train_image_uri,
     instance_count=1,
     base_job_name="eval-script",
     role=role,
@@ -177,6 +176,17 @@ script_eval = FrameworkProcessor(
     estimator_cls=sagemaker.sklearn.estimator.SKLearn,
     framework_version="0.20.0",
 )
+
+# script_eval = HuggingFaceProcessor(
+#     instance_type=gpu_instance_type,
+#     image_uri=image_uri,
+#     instance_count=1,
+#     base_job_name="preprocess-script",
+#     role=role,
+#     sagemaker_session=sagemaker_session,
+#     transformers_version=transformers_version,
+#     pytorch_version=pytorch_version,
+# )
 
 evaluation_report = PropertyFile(
     name="EvaluationReport",
@@ -232,7 +242,7 @@ model_metrics = ModelMetrics(
 
 model = Model(
     name="text-classification-model",
-    image_uri=image_uri,
+    image_uri=inference_image_uri,
     model_data=step_train.properties.ModelArtifacts.S3ModelArtifacts,
     sagemaker_session=sagemaker_session,
     source_dir="src",
@@ -241,9 +251,9 @@ model = Model(
 )
 
 # combine preprocessor and model into one pipeline-model
-# pipeline_model = PipelineModel(
-#     models=[model], role=role, sagemaker_session=sagemaker_session
-# )
+pipeline_model = PipelineModel(
+    models=[model], role=role, sagemaker_session=sagemaker_session
+)
 
 # step_register = RegisterModel(
 #     name="register-model",
@@ -259,7 +269,7 @@ model = Model(
 
 step_register = ModelStep(
     name="register-model",
-    step_args=model.register(
+    step_args=pipeline_model.register(
         content_types=["text/csv"],
         response_types=["text/csv"],
         inference_instances=[gpu_instance_type, gpu_instance_type],
@@ -272,7 +282,7 @@ step_register = ModelStep(
 # ------------ Deploy (not used in pipeline) ------------
 
 script_deploy = ScriptProcessor(
-    image_uri=image_uri,
+    image_uri=train_image_uri,
     command=["python3"],
     instance_type="ml.t3.medium",
     instance_count=1,
