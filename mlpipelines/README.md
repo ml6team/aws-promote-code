@@ -29,7 +29,6 @@ Each pipeline step requires a base docker image. You can use prebuild Images fro
 ```bash
 sh images/train/build_and_push.sh
 sh images/inference/build_and_push.sh
-
 ```
 
 ## 4. Running the pipeline
