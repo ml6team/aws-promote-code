@@ -3,7 +3,7 @@
 aws ecr get-login-password --region eu-west-3 | docker login --username AWS --password-stdin 763104351884.dkr.ecr.eu-west-3.amazonaws.com
 
 # build docker image (if M1 user --> specify platform)
-docker build -t inference-image --platform linux/amd64 -f images/train/Dockerfile .
+docker build -t inference-image --platform linux/amd64 -f images/inference/Dockerfile .
 # For running image locally: docker run --rm -ti --platform linux/amd64 inference-image
 
 # Login to docker registry

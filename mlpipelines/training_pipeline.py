@@ -22,6 +22,7 @@ from sagemaker import PipelineModel
 from sagemaker.workflow.steps import CacheConfig
 from sagemaker.sklearn.processing import SKLearnProcessor
 from sagemaker.huggingface import HuggingFaceProcessor, HuggingFace
+from sagemaker.huggingface.model import HuggingFaceModel
 from sagemaker.workflow.pipeline_experiment_config import PipelineExperimentConfig
 from sagemaker.workflow.execution_variables import ExecutionVariables
 from sagemaker.workflow.functions import Join
@@ -38,7 +39,7 @@ args = parser.parse_args()
 
 region = boto3.Session(region_name=args.region).region_name
 
-sagemaker_session = PipelineSession()  # sagemaker.session.Session()
+sagemaker_session = PipelineSession()
 
 # try:
 #     role = sagemaker.get_execution_role()
@@ -47,7 +48,6 @@ sagemaker_session = PipelineSession()  # sagemaker.session.Session()
 iam = boto3.client("iam")
 role = iam.get_role(RoleName=f"{args.account}-sagemaker-exec")['Role']['Arn']
 
-print(role)
 default_bucket = sagemaker_session.default_bucket()
 train_image_uri = f"{args.account}.dkr.ecr.{args.region}.amazonaws.com/training-image:latest"
 inference_image_uri = f"{args.account}.dkr.ecr.{args.region}.amazonaws.com/inference-image:latest"
@@ -58,7 +58,7 @@ model_package_group_name = f"{args.pipeline_name}ModelGroup"
 pipeline_name = args.pipeline_name
 
 gpu_instance_type = "ml.g4dn.xlarge"
-pytorch_version = "1.6.0"
+pytorch_version = "1.9.0"
 transformers_version = "4.11.0"
 
 # ------------ Pipeline Parameters ------------
@@ -73,7 +73,6 @@ batch_size = ParameterInteger(
 )
 
 # ------------ Preprocess ------------
-
 
 script_preprocess = HuggingFaceProcessor(
     instance_type=gpu_instance_type,
@@ -154,14 +153,7 @@ step_train = TrainingStep(
 
 # ------------ Eval ------------
 
-# script_eval = ScriptProcessor(
-#     image_uri=training_image_uri,
-#     command=["python3"],
-#     instance_type=huggingface_instance_type,
-#     instance_count=1,
-#     base_job_name="script-eval",
-#     role=role,
-# )
+
 
 script_eval = FrameworkProcessor(
     instance_type=gpu_instance_type,
@@ -240,7 +232,8 @@ model_metrics = ModelMetrics(
 )
 
 
-model = Model(
+# model = Model(
+model = HuggingFaceModel(
     name="text-classification-model",
     image_uri=inference_image_uri,
     model_data=step_train.properties.ModelArtifacts.S3ModelArtifacts,
@@ -248,12 +241,15 @@ model = Model(
     source_dir="src",
     entry_point="model.py",
     role=role,
+    transformers_version=transformers_version,
+    pytorch_version=pytorch_version,
+    py_version="py38",
 )
 
 # combine preprocessor and model into one pipeline-model
-pipeline_model = PipelineModel(
-    models=[model], role=role, sagemaker_session=sagemaker_session
-)
+# model = PipelineModel(
+#     models=[model], role=role, sagemaker_session=sagemaker_session
+# )
 
 # step_register = RegisterModel(
 #     name="register-model",
@@ -269,7 +265,7 @@ pipeline_model = PipelineModel(
 
 step_register = ModelStep(
     name="register-model",
-    step_args=pipeline_model.register(
+    step_args=model.register(
         content_types=["text/csv"],
         response_types=["text/csv"],
         inference_instances=[gpu_instance_type, gpu_instance_type],

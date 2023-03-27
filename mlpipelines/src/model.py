@@ -47,6 +47,6 @@ def predict_fn(input_data, model):
 
 def model_fn(model_dir):
     """Deserialize/load fitted model"""
-    model = get_model(num_labels=40)
+    model = get_model(num_labels=len(config.MEDICAL_CATEGORIES))
     model.load_state_dict(torch.load(os.path.join(model_dir, "model.joblib")))
     return model
