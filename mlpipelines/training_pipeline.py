@@ -24,6 +24,7 @@ from sagemaker.sklearn.processing import SKLearnProcessor
 from sagemaker.huggingface import HuggingFaceProcessor, HuggingFace
 from sagemaker.huggingface.model import HuggingFaceModel
 from sagemaker.workflow.pipeline_experiment_config import PipelineExperimentConfig
+from sagemaker.workflow.pipeline_context import LocalPipelineSession
 from sagemaker.workflow.execution_variables import ExecutionVariables
 from sagemaker.workflow.functions import Join
 from sagemaker.workflow.model_step import ModelStep
@@ -40,6 +41,8 @@ args = parser.parse_args()
 region = boto3.Session(region_name=args.region).region_name
 
 sagemaker_session = PipelineSession()
+# sagemaker_session = LocalPipelineSession()
+
 
 # try:
 #     role = sagemaker.get_execution_role()
@@ -241,9 +244,9 @@ model = HuggingFaceModel(
     source_dir="src",
     entry_point="model.py",
     role=role,
-    transformers_version=transformers_version,
-    pytorch_version=pytorch_version,
-    py_version="py38",
+    # transformers_version=transformers_version,
+    # pytorch_version=pytorch_version,
+    # py_version="py38",
 )
 
 # combine preprocessor and model into one pipeline-model
