@@ -34,8 +34,8 @@ def output_fn(prediction, accept):
 
 def predict_fn(input_data, model):
     """Process input data"""
-    tokenizer = MyTokenizer()
-    input = tokenizer(input_data, return_tensors='pt')
+    tok = MyTokenizer()
+    input = tok.tokenizer(input_data, return_tensors='pt')
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model.to(device)
     input.to(device)

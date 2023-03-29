@@ -20,7 +20,7 @@ from utils.helper import load_dataset, load_num_labels, get_model
 
 
 def parse_args():
-    logging.warning('reading arguments')
+    logging.info('reading arguments')
 
     parser = argparse.ArgumentParser()
 
@@ -45,12 +45,12 @@ def parse_args():
 def train(run):
     args, _ = parse_args()
 
-    logging.warning('Load data')
+    logging.info('Load data')
     dataset = load_dataset(args.train, "train")
     num_labels = load_num_labels(args.labels)
     dataloader = DataLoader(dataset, shuffle=True, batch_size=args.batch_size)
     
-    logging.warning('Training model')
+    logging.info('Training model')
     model = get_model(num_labels)
     optimizer = AdamW(model.parameters(), lr=5e-5)
     
@@ -61,7 +61,7 @@ def train(run):
     )
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    logging.warning(f"Training on device: {device}")
+    logging.info(f"Training on device: {device}")
 
     model.train()
     model.to(device)
@@ -86,16 +86,16 @@ def train(run):
             run.log_metric(name="training-loss", value=loss, step=counter)
             run.log_metric(name="training-accuracy", value=acc, step=counter)
             run.log_metric(name="training-f1", value=f1, step=counter)
-            logging.warning(f"Training: step {counter}")
+            logging.info(f"Training: step {counter}")
 
             counter += 1
 
-    logging.warning('Saving model')
+    logging.info('Saving model')
     model_location = os.path.join(args.sm_model_dir, "model.joblib")
     with open(model_location, 'wb') as f:
         torch.save(model.state_dict(), f)
 
-    logging.warning("Stored trained model at {}".format(model_location))
+    logging.info("Stored trained model at {}".format(model_location))
 
 
 if __name__ == "__main__":

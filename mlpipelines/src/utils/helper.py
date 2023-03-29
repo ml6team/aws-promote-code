@@ -53,10 +53,10 @@ def load_dataset(dir, file_extension: str):
         raise ValueError("Invalid extension. Expected one of: %s" %
                          allowed_extensions)
 
-    x_train = np.load(os.path.join(dir, f"x_{file_extension}.npy"))
-    y_train = np.load(os.path.join(dir, f"y_{file_extension}.npy"))
+    x = np.load(os.path.join(dir, f"x_{file_extension}.npy"))
+    y = np.load(os.path.join(dir, f"y_{file_extension}.npy"))
 
-    return MyDataset(x_train, y_train)
+    return MyDataset(x, y)
 
 
 def load_num_labels(label_dir: str) -> int:

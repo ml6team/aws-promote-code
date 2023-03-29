@@ -21,19 +21,18 @@ def eval_model():
     dataloader = DataLoader(dataset, shuffle=True, batch_size=10)
     num_labels = load_num_labels("/opt/ml/processing/labels")
 
-    logging.warning('Fetching model')
+    logging.info('Fetching model')
     model = get_model(num_labels)
 
     model_path = f"/opt/ml/processing/model/model.tar.gz"
     with tarfile.open(model_path, "r:gz") as tar:
         tar.extractall("./model")
 
-    # clf = load('./model/model.joblib')
     model.load_state_dict(torch.load("./model/model.joblib"))
 
-    logging.warning('Evaluating model')
+    logging.info('Evaluating model')
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    logging.warning(f"Training on device: {device}")
+    logging.info(f"Training on device: {device}")
 
     model.eval()
     model.to(device)
@@ -48,7 +47,7 @@ def eval_model():
             acc_list.append(accuracy_score(y, y_pred))
 
     accuracy = np.mean(acc_list)
-    logging.warning(f"Attained accuracy: {accuracy}")
+    logging.info(f"Attained accuracy: {accuracy}")
     report_dict = {
         "metrics": {
             "accuracy": {
@@ -57,7 +56,7 @@ def eval_model():
         },
     }
 
-    logging.warning('Saving evaluation')
+    logging.info('Saving evaluation')
     output_dir = "/opt/ml/processing/evaluation"
     pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
 

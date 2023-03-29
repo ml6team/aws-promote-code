@@ -6,13 +6,13 @@ import logging
 from utils.helper import MyTokenizer, Encoder
 
 def preprocess():
-    logging.warning('fetching dataset')
+    logging.info('fetching dataset')
     df_train = pd.read_csv(os.path.join(
         "/opt/ml/processing/input/train", "train.csv"))
     df_test = pd.read_csv(os.path.join(
         "/opt/ml/processing/input/test", "test.csv"))
 
-    logging.warning('tokenizing dataset')
+    logging.info('tokenizing dataset')
     tokenizer = MyTokenizer()
     x_train = [tokenizer.tokenize(v) for v in df_train.transcription.values]
     x_test = [tokenizer.tokenize(v) for v in df_test.transcription.values]
@@ -20,7 +20,7 @@ def preprocess():
     y_train = [encoder.encode(c) for c in df_train.medical_specialty.values]
     y_test = [encoder.encode(c) for c in df_test.medical_specialty.values]
 
-    logging.warning('saving dataset')
+    logging.info('saving dataset')
 
     # save data
     np.save(os.path.join("/opt/ml/processing/output/train", "x_train.npy"), x_train)
