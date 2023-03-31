@@ -28,9 +28,9 @@ if __name__ == "__main__":
 
     parser.add_argument('--account', type=str, default="101436505502")
     parser.add_argument('--region', type=str, default="eu-west-3")
-    parser.add_argument('--model_package_name', type=str,
+    parser.add_argument('--model-package-name', type=str,
                         default="training-pipelineModelGroup")
-    parser.add_argument('--model_version', type=int, default=1)
+    parser.add_argument('--model-version', type=int, default=1)
     args = parser.parse_args()
 
     iam = boto3.client('iam')

@@ -59,6 +59,10 @@ pipeline_name = args.pipeline_name
 gpu_instance_type = "ml.g4dn.xlarge"
 pytorch_version = "1.9.0"
 transformers_version = "4.11.0"
+py_version= "py38"
+requirement_dependencies = ['images/inference/requirements.txt']
+
+cache_config = CacheConfig(enable_caching=True, expire_after="30d")
 
 # ------------ Pipeline Parameters ------------
 
@@ -80,8 +84,11 @@ script_preprocess = HuggingFaceProcessor(
     base_job_name="preprocess-script",
     role=role,
     sagemaker_session=sagemaker_session,
-    transformers_version=transformers_version,
-    pytorch_version=pytorch_version,
+    # transformers_version=transformers_version,
+    # pytorch_version=pytorch_version,
+    # py_version=py_version,
+    # dependencies=requirement_dependencies,
+    
 )
 
 preprocess_step_args = script_preprocess.run(
@@ -111,13 +118,23 @@ preprocess_step_args = script_preprocess.run(
 step_preprocess = ProcessingStep(
     name="preprocess-data",
     step_args=preprocess_step_args,
-    cache_config=CacheConfig(enable_caching=True, expire_after="30d")
+    cache_config=cache_config,
 )
 
 # ------------ Train ------------
 
-estimator = Estimator(
-    image_uri=train_image_uri,
+# estimator = Estimator(
+#     image_uri=train_image_uri,
+#     instance_type=gpu_instance_type,
+#     instance_count=1,
+#     source_dir="src",
+#     entry_point="train.py",
+#     sagemaker_session=sagemaker_session,
+#     role=role,
+#     output_path=model_path,
+# )
+
+estimator = HuggingFace(
     instance_type=gpu_instance_type,
     instance_count=1,
     source_dir="src",
@@ -125,6 +142,10 @@ estimator = Estimator(
     sagemaker_session=sagemaker_session,
     role=role,
     output_path=model_path,
+    transformers_version=transformers_version,
+    pytorch_version=pytorch_version,
+    py_version=py_version,
+    dependencies=requirement_dependencies,
 )
 
 estimator.set_hyperparameters(
@@ -136,6 +157,7 @@ estimator.set_hyperparameters(
 step_train = TrainingStep(
     name="train-model",
     estimator=estimator,
+    cache_config=cache_config,
     inputs={
         "train": TrainingInput(
             s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
@@ -152,32 +174,18 @@ step_train = TrainingStep(
 
 # ------------ Eval ------------
 
-
-
-script_eval = FrameworkProcessor(
+script_eval = HuggingFaceProcessor(
     instance_type=gpu_instance_type,
     image_uri=train_image_uri,
     instance_count=1,
     base_job_name="eval-script",
     role=role,
     sagemaker_session=sagemaker_session,
-    command=["python3"],
-    # following args need to be provided, but don't have an effect
-    # because custome image is used
-    estimator_cls=sagemaker.sklearn.estimator.SKLearn,
-    framework_version="0.20.0",
-)
-
-# script_eval = HuggingFaceProcessor(
-#     instance_type=gpu_instance_type,
-#     image_uri=image_uri,
-#     instance_count=1,
-#     base_job_name="preprocess-script",
-#     role=role,
-#     sagemaker_session=sagemaker_session,
-#     transformers_version=transformers_version,
+#   transformers_version=transformers_version,
 #     pytorch_version=pytorch_version,
-# )
+#     py_version=py_version,
+#     dependencies=requirement_dependencies,
+)
 
 evaluation_report = PropertyFile(
     name="EvaluationReport",
@@ -215,6 +223,8 @@ step_eval = ProcessingStep(
     name="eval-model",
     step_args=eval_step_args,
     property_files=[evaluation_report],
+    cache_config=cache_config,
+    
 )
 
 # ------------ Register ------------
@@ -230,36 +240,19 @@ model_metrics = ModelMetrics(
     )
 )
 
-
-# model = Model(
 model = HuggingFaceModel(
     name="text-classification-model",
-    image_uri=inference_image_uri,
+    # image_uri=inference_image_uri,
     model_data=step_train.properties.ModelArtifacts.S3ModelArtifacts,
     sagemaker_session=sagemaker_session,
     source_dir="src",
     entry_point="model.py",
+    dependencies=['images/inference/requirements.txt'],
     role=role,
-    # transformers_version=transformers_version,
-    # pytorch_version=pytorch_version,
-    # py_version="py38",
+    transformers_version=transformers_version,
+    pytorch_version=pytorch_version,
+    py_version=py_version,
 )
-
-# combine preprocessor and model into one pipeline-model
-# model = PipelineModel(
-#     models=[model], role=role, sagemaker_session=sagemaker_session
-# )
-
-# step_register = RegisterModel(
-#     name="register-model",
-#     model=model,
-#     content_types=["text/csv"],
-#     response_types=["text/csv"],
-#     inference_instances=[gpu_instance_type, gpu_instance_type],
-#     transform_instances=[gpu_instance_type],
-#     model_package_group_name=model_package_group_name,
-#     model_metrics=model_metrics,
-# )
 
 
 step_register = ModelStep(

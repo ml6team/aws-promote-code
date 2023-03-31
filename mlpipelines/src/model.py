@@ -3,7 +3,7 @@ import os
 import json
 
 import torch
-from sagemaker_containers.beta.framework import worker, encoders
+# from sagemaker_containers.beta.framework import worker, encoders
 
 from utils.helper import get_model, MyTokenizer
 from utils import config
@@ -14,6 +14,8 @@ def input_fn(input_data, content_type):
     if content_type == "application/json":
         input_dict = json.loads(input_data)
         return input_dict["instances"]
+    elif content_type == "text/csv":
+        return [input_data]
     else:
         raise ValueError("{} not supported by script!".format(content_type))
 
@@ -21,12 +23,14 @@ def input_fn(input_data, content_type):
 def output_fn(prediction, accept):
     """Format prediction output"""
     if accept == "application/json":
-        instances = []
-        for row in prediction.tolist():
-            instances.append(row)
-        json_output = {"instances": instances}
+        # instances = []
+        # for row in prediction.tolist():
+        #     instances.append(row)
+        # json_output = {"instances": instances}
 
-        return worker.Response(json.dumps(json_output), mimetype=accept)
+        # return worker.Response(json.dumps(json_output), mimetype=accept)
+        return prediction
+    
     else:
         raise RuntimeError(
             "{} accept type is not supported by this script.".format(accept))
