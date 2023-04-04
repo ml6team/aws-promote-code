@@ -10,10 +10,8 @@ from sklearn.metrics import f1_score, accuracy_score
 from transformers import get_scheduler
 
 import boto3
-import sagemaker
 from sagemaker.session import Session
 from sagemaker.experiments.run import Run
-from sagemaker.experiments import load_run
 from sagemaker.utils import unique_name_from_base
 
 
@@ -85,9 +83,9 @@ def train(run):
 
     num_epochs = args.epoch_count
     num_training_steps = num_epochs * len(train_dataloader)
-    lr_scheduler = get_scheduler(
-        name="linear", optimizer=optimizer, num_warmup_steps=0, num_training_steps=num_training_steps
-    )
+    # lr_scheduler = get_scheduler(
+    #     name="linear", optimizer=optimizer, num_warmup_steps=0, num_training_steps=num_training_steps
+    # )
 
     run.log_parameters({"epoch_count": args.epoch_count,
                        "batch_size": args.batch_size, 
@@ -117,7 +115,7 @@ def train(run):
             loss.backward()
 
             optimizer.step()
-            lr_scheduler.step()
+            # lr_scheduler.step()
             optimizer.zero_grad()
 
             # track
@@ -155,11 +153,12 @@ if __name__ == "__main__":
     session = Session(boto3.session.Session(region_name="eu-west-3"))
     exp_name = "training-pipeline"
 
-    # TODO: fix
+    # TODO: load run which is automatically create by sagemaker session
+    # instead of create new experiment
     with Run(
         experiment_name=exp_name,
         run_name=unique_name_from_base(exp_name + "-run"),
         sagemaker_session=session,
     ) as run:
-    # with load_run() as run:
+
         train(run)

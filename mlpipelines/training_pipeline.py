@@ -38,7 +38,6 @@ args = parser.parse_args()
 region = boto3.Session(region_name=args.region).region_name
 
 sagemaker_session = PipelineSession()
-# sagemaker_session = LocalPipelineSession()
 
 
 # try:
@@ -50,7 +49,6 @@ role = iam.get_role(RoleName=f"{args.account}-sagemaker-exec")['Role']['Arn']
 
 default_bucket = sagemaker_session.default_bucket()
 train_image_uri = f"{args.account}.dkr.ecr.{args.region}.amazonaws.com/training-image:latest"
-# inference_image_uri = f"{args.account}.dkr.ecr.{args.region}.amazonaws.com/inference-image:latest"
 
 model_path = f"s3://{default_bucket}/model"
 data_path = f"s3://{default_bucket}/data"
@@ -63,13 +61,15 @@ transformers_version = "4.11.0"
 py_version = "py38"
 requirement_dependencies = ['images/inference/requirements.txt']
 
+tune_hyperparameter = False
+
 cache_config = CacheConfig(enable_caching=True, expire_after="30d")
 
 # ------------ Pipeline Parameters ------------
 
 epoch_count = ParameterInteger(
     name="epochs",
-    default_value=2
+    default_value=10
 )
 batch_size = ParameterInteger(
     name="batch_size",
@@ -78,7 +78,7 @@ batch_size = ParameterInteger(
 
 learning_rate = ParameterFloat(
     name="learning_rate",
-    default_value=5e-5
+    default_value=1e-5
 )
 
 # ------------ Preprocess ------------
@@ -141,55 +141,58 @@ estimator = HuggingFace(
 estimator.set_hyperparameters(
     epoch_count=epoch_count,
     batch_size=batch_size,
-    # learning_rate=learning_rate,
+    learning_rate=learning_rate,
 )
 
-hyperparameter_ranges = {
-    "learning_rate": ContinuousParameter(1e-5, 0.1),
-    # "batch-size": CategoricalParameter([32, 64, 128, 256, 512]),
-}
-objective_metric_name = "average test f1"
-objective_type = "Maximize"
-metric_definitions = [{"Name": "average test f1",
-                       "Regex": "Test set: Average f1: ([0-9\\.]+)"}]
+if tune_hyperparameter:
+    hyperparameter_ranges = {
+        "learning_rate": CategoricalParameter([1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6]),
 
-tuner = HyperparameterTuner(
-    estimator,
-    objective_metric_name,
-    hyperparameter_ranges,
-    metric_definitions,
-    max_jobs=9,
-    max_parallel_jobs=1,
-    objective_type=objective_type,
-)
+    }
 
-# step_train = TrainingStep(
-#     name="train-model",
-#     estimator=estimator,
-#     cache_config=cache_config,
-#     inputs={
-#         "train": TrainingInput(
-#             s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-#                 "train"].S3Output.S3Uri,
-#             content_type="text/csv",
-#         ),
-#         "test": TrainingInput(
-#             s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-#                 "test"].S3Output.S3Uri,
-#             content_type="text/csv",
-#         ),
-#         "labels": TrainingInput(
-#             s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-#                 "labels"].S3Output.S3Uri,
-#             content_type="text/csv",
-#         )
-#     },
-# )
+    objective_metric_name = "average test f1"
+    objective_type = "Maximize"
+    metric_definitions = [{"Name": "average test f1",
+                           "Regex": "Test set: Average f1: ([0-9\\.]+)"}]
 
-step_train = TuningStep(
-    name="tune-model",
-    cache_config=cache_config,
-    step_args=tuner.fit(
+    tuner = HyperparameterTuner(
+        estimator,
+        objective_metric_name,
+        hyperparameter_ranges,
+        metric_definitions,
+        max_jobs=6,
+        max_parallel_jobs=1,
+        objective_type=objective_type,
+    )
+
+    step_train = TuningStep(
+        name="tune-model",
+        cache_config=cache_config,
+        step_args=tuner.fit(
+            inputs={
+                "train": TrainingInput(
+                    s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
+                        "train"].S3Output.S3Uri,
+                    content_type="text/csv",
+                ),
+                "test": TrainingInput(
+                    s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
+                        "test"].S3Output.S3Uri,
+                    content_type="text/csv",
+                ),
+                "labels": TrainingInput(
+                    s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
+                        "labels"].S3Output.S3Uri,
+                    content_type="text/csv",
+                )
+            },
+        ),
+    )
+else:
+    step_train = TrainingStep(
+        name="train-model",
+        estimator=estimator,
+        cache_config=cache_config,
         inputs={
             "train": TrainingInput(
                 s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
@@ -207,8 +210,8 @@ step_train = TuningStep(
                 content_type="text/csv",
             )
         },
-    ),
-)
+    )
+
 
 # ------------ Eval ------------
 
@@ -236,11 +239,8 @@ eval_step_args = script_eval.run(
             destination="/opt/ml/processing/test",
         ),
         ProcessingInput(
-            # source=step_train.properties.ModelArtifacts.S3ModelArtifacts,
-            source=step_train.get_top_model_s3_uri(
-                top_k=0, s3_bucket=sagemaker_session.default_bucket()),
-            destination="/opt/ml/processing/model",
-        ),
+            source=step_train.properties.ModelArtifacts.S3ModelArtifacts,
+            destination="/opt/ml/processing/model",),
         ProcessingInput(
             source=step_preprocess.properties.ProcessingOutputConfig.Outputs[
                 "labels"].S3Output.S3Uri,
@@ -278,11 +278,7 @@ model_metrics = ModelMetrics(
 
 model = HuggingFaceModel(
     name="text-classification-model",
-    # model_data=step_train.properties.ModelArtifacts.S3ModelArtifacts,
-    model_data=step_train.get_top_model_s3_uri(
-        top_k=0,
-        s3_bucket=sagemaker_session.default_bucket()
-    ),
+    model_data=step_train.properties.ModelArtifacts.S3ModelArtifacts,
     sagemaker_session=sagemaker_session,
     source_dir="src",
     entry_point="model.py",
