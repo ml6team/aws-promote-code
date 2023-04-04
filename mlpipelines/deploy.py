@@ -3,6 +3,8 @@ import boto3
 import sagemaker.session
 import argparse
 
+from sagemaker.model_monitor import DataCaptureConfig
+
 
 def deploy(role_arn: str, model_package_arn: str) -> None:
     sagemaker_session = sagemaker.session.Session()
@@ -20,7 +22,18 @@ def deploy(role_arn: str, model_package_arn: str) -> None:
     model = ModelPackage(role=role_arn, model_package_arn=model_package_arn,
                          sagemaker_session=sagemaker_session)
 
-    model.deploy(initial_instance_count=1, instance_type='ml.g4dn.xlarge')
+    data_capture_config = DataCaptureConfig(
+        enable_capture = True, 
+        # sampling_percentage = sampling_percentage, # Optional
+        # destination_s3_uri = s3_capture_upload_path, # Optional
+    )
+
+    model.deploy(
+        initial_instance_count=1,
+        instance_type='ml.g4dn.xlarge',
+        data_capture_config=data_capture_config,
+        # endpoint_name="",
+    )
 
 
 if __name__ == "__main__":

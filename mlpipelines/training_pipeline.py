@@ -5,10 +5,10 @@ import os
 import argparse
 
 from sagemaker.processing import ScriptProcessor, FrameworkProcessor
-from sagemaker.workflow.steps import ProcessingStep, TrainingStep
+from sagemaker.workflow.steps import ProcessingStep, TrainingStep, TuningStep
 from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.properties import PropertyFile
-from sagemaker.workflow.parameters import ParameterInteger
+from sagemaker.workflow.parameters import ParameterInteger, ParameterFloat
 from sagemaker.model_metrics import MetricsSource, ModelMetrics
 from sagemaker.workflow.conditions import ConditionGreaterThanOrEqualTo
 from sagemaker.workflow.condition_step import ConditionStep
@@ -24,6 +24,7 @@ from sagemaker.huggingface import HuggingFaceProcessor, HuggingFace
 from sagemaker.huggingface.model import HuggingFaceModel
 from sagemaker.workflow.pipeline_context import LocalPipelineSession
 from sagemaker.workflow.model_step import ModelStep
+from sagemaker.tuner import IntegerParameter, CategoricalParameter, ContinuousParameter, HyperparameterTuner
 
 from sagemaker.workflow.pipeline_context import PipelineSession
 
@@ -49,7 +50,7 @@ role = iam.get_role(RoleName=f"{args.account}-sagemaker-exec")['Role']['Arn']
 
 default_bucket = sagemaker_session.default_bucket()
 train_image_uri = f"{args.account}.dkr.ecr.{args.region}.amazonaws.com/training-image:latest"
-inference_image_uri = f"{args.account}.dkr.ecr.{args.region}.amazonaws.com/inference-image:latest"
+# inference_image_uri = f"{args.account}.dkr.ecr.{args.region}.amazonaws.com/inference-image:latest"
 
 model_path = f"s3://{default_bucket}/model"
 data_path = f"s3://{default_bucket}/data"
@@ -59,7 +60,7 @@ pipeline_name = args.pipeline_name
 gpu_instance_type = "ml.g4dn.xlarge"
 pytorch_version = "1.9.0"
 transformers_version = "4.11.0"
-py_version= "py38"
+py_version = "py38"
 requirement_dependencies = ['images/inference/requirements.txt']
 
 cache_config = CacheConfig(enable_caching=True, expire_after="30d")
@@ -68,11 +69,16 @@ cache_config = CacheConfig(enable_caching=True, expire_after="30d")
 
 epoch_count = ParameterInteger(
     name="epochs",
-    default_value=1
+    default_value=2
 )
 batch_size = ParameterInteger(
     name="batch_size",
     default_value=10
+)
+
+learning_rate = ParameterFloat(
+    name="learning_rate",
+    default_value=5e-5
 )
 
 # ------------ Preprocess ------------
@@ -84,11 +90,6 @@ script_preprocess = HuggingFaceProcessor(
     base_job_name="preprocess-script",
     role=role,
     sagemaker_session=sagemaker_session,
-    # transformers_version=transformers_version,
-    # pytorch_version=pytorch_version,
-    # py_version=py_version,
-    # dependencies=requirement_dependencies,
-    
 )
 
 preprocess_step_args = script_preprocess.run(
@@ -123,17 +124,6 @@ step_preprocess = ProcessingStep(
 
 # ------------ Train ------------
 
-# estimator = Estimator(
-#     image_uri=train_image_uri,
-#     instance_type=gpu_instance_type,
-#     instance_count=1,
-#     source_dir="src",
-#     entry_point="train.py",
-#     sagemaker_session=sagemaker_session,
-#     role=role,
-#     output_path=model_path,
-# )
-
 estimator = HuggingFace(
     instance_type=gpu_instance_type,
     instance_count=1,
@@ -151,25 +141,73 @@ estimator = HuggingFace(
 estimator.set_hyperparameters(
     epoch_count=epoch_count,
     batch_size=batch_size,
-
+    # learning_rate=learning_rate,
 )
 
-step_train = TrainingStep(
-    name="train-model",
-    estimator=estimator,
+hyperparameter_ranges = {
+    "learning_rate": ContinuousParameter(1e-5, 0.1),
+    # "batch-size": CategoricalParameter([32, 64, 128, 256, 512]),
+}
+objective_metric_name = "average test f1"
+objective_type = "Maximize"
+metric_definitions = [{"Name": "average test f1",
+                       "Regex": "Test set: Average f1: ([0-9\\.]+)"}]
+
+tuner = HyperparameterTuner(
+    estimator,
+    objective_metric_name,
+    hyperparameter_ranges,
+    metric_definitions,
+    max_jobs=9,
+    max_parallel_jobs=1,
+    objective_type=objective_type,
+)
+
+# step_train = TrainingStep(
+#     name="train-model",
+#     estimator=estimator,
+#     cache_config=cache_config,
+#     inputs={
+#         "train": TrainingInput(
+#             s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
+#                 "train"].S3Output.S3Uri,
+#             content_type="text/csv",
+#         ),
+#         "test": TrainingInput(
+#             s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
+#                 "test"].S3Output.S3Uri,
+#             content_type="text/csv",
+#         ),
+#         "labels": TrainingInput(
+#             s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
+#                 "labels"].S3Output.S3Uri,
+#             content_type="text/csv",
+#         )
+#     },
+# )
+
+step_train = TuningStep(
+    name="tune-model",
     cache_config=cache_config,
-    inputs={
-        "train": TrainingInput(
-            s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-                "train"].S3Output.S3Uri,
-            content_type="text/csv",
-        ),
-        "labels": TrainingInput(
-            s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-                "labels"].S3Output.S3Uri,
-            content_type="text/csv",
-        )
-    },
+    step_args=tuner.fit(
+        inputs={
+            "train": TrainingInput(
+                s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
+                    "train"].S3Output.S3Uri,
+                content_type="text/csv",
+            ),
+            "test": TrainingInput(
+                s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
+                    "test"].S3Output.S3Uri,
+                content_type="text/csv",
+            ),
+            "labels": TrainingInput(
+                s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
+                    "labels"].S3Output.S3Uri,
+                content_type="text/csv",
+            )
+        },
+    ),
 )
 
 # ------------ Eval ------------
@@ -181,10 +219,6 @@ script_eval = HuggingFaceProcessor(
     base_job_name="eval-script",
     role=role,
     sagemaker_session=sagemaker_session,
-#   transformers_version=transformers_version,
-#     pytorch_version=pytorch_version,
-#     py_version=py_version,
-#     dependencies=requirement_dependencies,
 )
 
 evaluation_report = PropertyFile(
@@ -202,7 +236,9 @@ eval_step_args = script_eval.run(
             destination="/opt/ml/processing/test",
         ),
         ProcessingInput(
-            source=step_train.properties.ModelArtifacts.S3ModelArtifacts,
+            # source=step_train.properties.ModelArtifacts.S3ModelArtifacts,
+            source=step_train.get_top_model_s3_uri(
+                top_k=0, s3_bucket=sagemaker_session.default_bucket()),
             destination="/opt/ml/processing/model",
         ),
         ProcessingInput(
@@ -224,7 +260,7 @@ step_eval = ProcessingStep(
     step_args=eval_step_args,
     property_files=[evaluation_report],
     cache_config=cache_config,
-    
+
 )
 
 # ------------ Register ------------
@@ -242,12 +278,15 @@ model_metrics = ModelMetrics(
 
 model = HuggingFaceModel(
     name="text-classification-model",
-    # image_uri=inference_image_uri,
-    model_data=step_train.properties.ModelArtifacts.S3ModelArtifacts,
+    # model_data=step_train.properties.ModelArtifacts.S3ModelArtifacts,
+    model_data=step_train.get_top_model_s3_uri(
+        top_k=0,
+        s3_bucket=sagemaker_session.default_bucket()
+    ),
     sagemaker_session=sagemaker_session,
     source_dir="src",
     entry_point="model.py",
-    dependencies=['images/inference/requirements.txt'],
+    dependencies=requirement_dependencies,
     role=role,
     transformers_version=transformers_version,
     pytorch_version=pytorch_version,
@@ -312,7 +351,8 @@ pipeline = Pipeline(
     name=pipeline_name,
     parameters=[
         epoch_count,
-        batch_size
+        batch_size,
+        learning_rate,
     ],
     steps=[
         step_preprocess,
