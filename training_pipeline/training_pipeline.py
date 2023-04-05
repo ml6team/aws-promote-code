@@ -285,6 +285,19 @@ model = HuggingFaceModel(
 )
 
 
+step_register_approve = ModelStep(
+    name="register-approved-model",
+    step_args=model.register(
+        content_types=["text/csv"],
+        response_types=["text/csv"],
+        inference_instances=[gpu_instance_type, gpu_instance_type],
+        transform_instances=[gpu_instance_type],
+        model_package_group_name=model_package_group_name,
+        model_metrics=model_metrics,
+        approval_status="Approved",
+    )
+)
+
 step_register = ModelStep(
     name="register-model",
     step_args=model.register(
@@ -297,23 +310,22 @@ step_register = ModelStep(
     )
 )
 
-# ------------ Deploy (not used in pipeline) ------------
+# ------------ Approval ------------
 
-script_deploy = ScriptProcessor(
+script_approve = ScriptProcessor(
     image_uri=train_image_uri,
     command=["python3"],
     instance_type="ml.t3.medium",
     instance_count=1,
-    base_job_name="script-workshop-deploy",
+    base_job_name="script-approve",
     role=role,
 )
 
-step_deploy = ProcessingStep(
+step_approve = ProcessingStep(
     name="workshop-deploy-model",
-    processor=script_deploy,
+    processor=script_approve,
     inputs=[],
-    outputs=[],
-    code="src/deploy.py",
+    code="src/approve.py",
     property_files=[],
 )
 
@@ -326,14 +338,14 @@ cond_gte = ConditionGreaterThanOrEqualTo(
         property_file=evaluation_report,
         json_path="metrics.accuracy.value"
     ),
-    right=0.1
+    right=0.5
 )
 
 step_cond = ConditionStep(
     name="accuracy-check",
     conditions=[cond_gte],
-    if_steps=[step_register],
-    else_steps=[],
+    if_steps=[step_register_approve],
+    else_steps=[step_register],
 )
 
 #  ------------ build Pipeline ------------
@@ -348,6 +360,7 @@ pipeline = Pipeline(
     steps=[
         step_preprocess,
         step_train,
+        # step_register,
         step_eval,
         step_cond,
     ],
