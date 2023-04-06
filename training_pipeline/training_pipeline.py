@@ -287,11 +287,12 @@ model = HuggingFaceModel(
 
 step_register_approve = ModelStep(
     name="register-approved-model",
+    display_name="register-approved-model",
     step_args=model.register(
         content_types=["text/csv"],
         response_types=["text/csv"],
-        inference_instances=[gpu_instance_type, gpu_instance_type],
-        transform_instances=[gpu_instance_type],
+        inference_instances=[gpu_instance_type, "ml.m5.large"],
+        transform_instances=[gpu_instance_type, "ml.m5.large"],
         model_package_group_name=model_package_group_name,
         model_metrics=model_metrics,
         approval_status="Approved",
@@ -300,11 +301,12 @@ step_register_approve = ModelStep(
 
 step_register = ModelStep(
     name="register-model",
+    display_name="register-model",
     step_args=model.register(
         content_types=["text/csv"],
         response_types=["text/csv"],
-        inference_instances=[gpu_instance_type, gpu_instance_type],
-        transform_instances=[gpu_instance_type],
+        inference_instances=[gpu_instance_type, "ml.m5.large"],
+        transform_instances=[gpu_instance_type, "ml.m5.large"],
         model_package_group_name=model_package_group_name,
         model_metrics=model_metrics,
     )

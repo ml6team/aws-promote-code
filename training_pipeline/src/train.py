@@ -83,9 +83,9 @@ def train(run):
 
     num_epochs = args.epoch_count
     num_training_steps = num_epochs * len(train_dataloader)
-    # lr_scheduler = get_scheduler(
-    #     name="linear", optimizer=optimizer, num_warmup_steps=0, num_training_steps=num_training_steps
-    # )
+    lr_scheduler = get_scheduler(
+        name="linear", optimizer=optimizer, num_warmup_steps=0, num_training_steps=num_training_steps
+    )
 
     run.log_parameters({"epoch_count": args.epoch_count,
                        "batch_size": args.batch_size, 
@@ -115,7 +115,7 @@ def train(run):
             loss.backward()
 
             optimizer.step()
-            # lr_scheduler.step()
+            lr_scheduler.step()
             optimizer.zero_grad()
 
             # track
