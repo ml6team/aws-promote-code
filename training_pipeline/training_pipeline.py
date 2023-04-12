@@ -34,7 +34,6 @@ region = boto3.Session(region_name=args.region).region_name
 
 sagemaker_session = PipelineSession()
 
-
 # try:
 #     role = sagemaker.get_execution_role()
 # except ValueError:
@@ -64,7 +63,7 @@ cache_config = CacheConfig(enable_caching=True, expire_after="30d")
 
 epoch_count = ParameterInteger(
     name="epochs",
-    default_value=10
+    default_value=5
 )
 batch_size = ParameterInteger(
     name="batch_size",
@@ -362,7 +361,6 @@ pipeline = Pipeline(
     steps=[
         step_preprocess,
         step_train,
-        # step_register,
         step_eval,
         step_cond,
     ],

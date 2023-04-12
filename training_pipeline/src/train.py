@@ -1,5 +1,6 @@
 import numpy as np
-import os, sys
+import os
+import sys
 import logging
 import argparse
 
@@ -65,16 +66,18 @@ def test_model(model, test_dataloader, device):
 
 def train(run):
     args, _ = parse_args()
-    
+
     log_interval = 100
 
     logger.info('Load train data')
     train_dataset = load_dataset(args.train, "train")
-    train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=args.batch_size)
-    
+    train_dataloader = DataLoader(
+        train_dataset, shuffle=True, batch_size=args.batch_size)
+
     logger.info('Load test data')
     test_dataset = load_dataset(args.test, "test")
-    test_dataloader = DataLoader(test_dataset, shuffle=True, batch_size=args.batch_size)
+    test_dataloader = DataLoader(
+        test_dataset, shuffle=True, batch_size=args.batch_size)
 
     logger.info('Training model')
     num_labels = load_num_labels(args.labels)
@@ -88,8 +91,8 @@ def train(run):
     )
 
     run.log_parameters({"epoch_count": args.epoch_count,
-                       "batch_size": args.batch_size, 
-                       "learning_rate": args.learning_rate})
+                       "batch_size": args.batch_size,
+                        "learning_rate": args.learning_rate})
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     logger.info(f"Training on device: {device}")
@@ -99,9 +102,9 @@ def train(run):
     train_loss_ = .0
     train_acc_ = .0
     train_f1_ = .0
- 
+
     for epoch in range(num_epochs):
-        
+
         model.train()
         for x, y in train_dataloader:
 
@@ -120,11 +123,14 @@ def train(run):
 
             # track
             if counter % log_interval == 0:
-                run.log_metric(name="training-loss", value=train_loss_/log_interval, step=counter)
-                run.log_metric(name="training-accuracy", value=train_acc_/log_interval, step=counter)
-                run.log_metric(name="training-f1", value=train_f1_/log_interval, step=counter)
+                run.log_metric(name="training-loss",
+                               value=train_loss_/log_interval, step=counter)
+                run.log_metric(name="training-accuracy",
+                               value=train_acc_/log_interval, step=counter)
+                run.log_metric(name="training-f1",
+                               value=train_f1_/log_interval, step=counter)
                 logger.info(f"Training: step {counter}")
-                
+
                 train_loss_ = .0
                 train_acc_ = .0
                 train_f1_ = .0
@@ -133,13 +139,12 @@ def train(run):
             train_acc_ += acc
             train_f1_ += f1
             counter += 1
-            
+
         # test model
         test_acc, test_f1 = test_model(model, test_dataloader, device)
         logger.info(f"Test set: Average f1: {test_f1:.4f}")
         run.log_metric(name="test-accuracy", value=test_acc, step=counter)
         run.log_metric(name="test-f1", value=test_f1, step=counter)
-        
 
     logger.info('Saving model')
     model_location = os.path.join(args.sm_model_dir, "model.joblib")
