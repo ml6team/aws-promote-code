@@ -311,26 +311,6 @@ step_register = ModelStep(
     )
 )
 
-# ------------ Approval ------------
-
-script_approve = ScriptProcessor(
-    image_uri=train_image_uri,
-    command=["python3"],
-    instance_type="ml.t3.medium",
-    instance_count=1,
-    base_job_name="script-approve",
-    role=role,
-)
-
-step_approve = ProcessingStep(
-    name="workshop-deploy-model",
-    processor=script_approve,
-    inputs=[],
-    code="src/approve.py",
-    property_files=[],
-)
-
-
 # ------------ Condition ------------
 
 cond_gte = ConditionGreaterThanOrEqualTo(
