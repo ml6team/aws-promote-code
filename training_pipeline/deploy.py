@@ -1,3 +1,4 @@
+"""Deploy model from ModelRegistry ModelPackage"""
 from sagemaker import ModelPackage
 import boto3
 import sagemaker.session

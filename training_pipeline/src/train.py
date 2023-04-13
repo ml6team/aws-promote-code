@@ -1,3 +1,4 @@
+""" Pipeline Training Step: The model is trained and the weights are saved. """
 import numpy as np
 import os
 import sys

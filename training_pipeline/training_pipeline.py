@@ -1,10 +1,9 @@
+"""Defines Sagemaker Training Pipeline"""
 import boto3
-import sagemaker.session
 import json
 import os
 import argparse
 
-from sagemaker.processing import ScriptProcessor, FrameworkProcessor
 from sagemaker.workflow.steps import ProcessingStep, TrainingStep, TuningStep
 from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.properties import PropertyFile
@@ -59,7 +58,9 @@ tune_hyperparameter = False
 
 cache_config = CacheConfig(enable_caching=True, expire_after="30d")
 
-# ------------ Pipeline Parameters ------------
+# ======================================================
+# Define Pipeline Parameters
+# ======================================================
 
 epoch_count = ParameterInteger(
     name="epochs",
@@ -75,7 +76,9 @@ learning_rate = ParameterFloat(
     default_value=1e-5
 )
 
-# ------------ Preprocess ------------
+# ======================================================
+# Step 1: Load and preprocess the data
+# ======================================================
 
 script_preprocess = HuggingFaceProcessor(
     instance_type=gpu_instance_type,
@@ -116,7 +119,9 @@ step_preprocess = ProcessingStep(
     cache_config=cache_config,
 )
 
-# ------------ Train ------------
+# ======================================================
+# Step 2: Train Huggingface model and optionally finetune hyperparams
+# ======================================================
 
 estimator = HuggingFace(
     instance_type=gpu_instance_type,
@@ -207,7 +212,9 @@ else:
     )
 
 
-# ------------ Eval ------------
+# ======================================================
+# Step 3: Evaluate model
+# ======================================================
 
 script_eval = HuggingFaceProcessor(
     instance_type=gpu_instance_type,
@@ -257,7 +264,9 @@ step_eval = ProcessingStep(
 
 )
 
-# ------------ Register ------------
+# ======================================================
+# Step 4: Register model
+# ======================================================
 
 evaluation_s3_uri = "{}/evaluation.json".format(
     step_eval.arguments["ProcessingOutputConfig"]["Outputs"][0]["S3Output"]["S3Uri"]
@@ -311,7 +320,9 @@ step_register = ModelStep(
     )
 )
 
-# ------------ Condition ------------
+# ======================================================
+# Step 5: Condition for model approval status
+# ======================================================
 
 cond_gte = ConditionGreaterThanOrEqualTo(
     left=JsonGet(
@@ -329,7 +340,9 @@ step_cond = ConditionStep(
     else_steps=[step_register],
 )
 
-#  ------------ build Pipeline ------------
+# ======================================================
+# Final Step: Define Pipeline
+# ======================================================
 
 pipeline = Pipeline(
     name=pipeline_name,

@@ -1,4 +1,4 @@
-"""Split local dataset (csv) and upload to Sagemaker S3 bucket"""
+"""Split local dataset (csv) in train an test. Then upload to Sagemaker S3 bucket."""
 from io import StringIO
 import pandas as pd
 import boto3
@@ -7,6 +7,7 @@ import sagemaker
 sagemaker_session = sagemaker.session.Session()
 
 def upload_df(df, file_name):
+    """Upload Pandas Dataframe to Sagemaker default bucket"""
     default_bucket = sagemaker_session.default_bucket()
     csv_buffer = StringIO()
     df.to_csv(csv_buffer)

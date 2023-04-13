@@ -1,4 +1,4 @@
-"""General helper methods for Sagemaker Pipeline steps"""
+"""General modules and helper methods for Sagemaker Pipeline steps"""
 import os
 import pandas as pd
 import numpy as np

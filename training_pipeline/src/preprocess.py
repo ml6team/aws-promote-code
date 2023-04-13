@@ -1,3 +1,4 @@
+""" Pipeline Preprocessing Step: Train and test text data is tokenized and the targets are encoded """
 import numpy as np
 import pandas as pd
 import os

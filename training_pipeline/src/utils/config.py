@@ -1,3 +1,5 @@
+"""Config file for training pipeline"""
+
 MODEL_NAME = "distilbert-base-uncased"
 
 MEDICAL_CATEGORIES = [' Allergy / Immunology', ' Autopsy', ' Bariatrics',

@@ -1,3 +1,4 @@
+""" Pipeline Evaluation Step: The trained model is load and test in the test data """
 import numpy as np
 import os
 import logging
