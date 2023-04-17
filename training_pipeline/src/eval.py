@@ -14,13 +14,15 @@ from torch.utils.data import DataLoader
 from sklearn.metrics import f1_score, accuracy_score
 
 from utils.helper import load_dataset, load_num_labels, get_model
+from utils import config
 
 
 def eval_model():
 
     dataset = load_dataset("/opt/ml/processing/test", "test")
     dataloader = DataLoader(dataset, shuffle=True, batch_size=10)
-    num_labels = load_num_labels("/opt/ml/processing/labels")
+    # num_labels = load_num_labels("/opt/ml/processing/labels")
+    num_labels = len(config.MEDICAL_CATEGORIES)
 
     logging.info('Fetching model')
     model = get_model(num_labels)

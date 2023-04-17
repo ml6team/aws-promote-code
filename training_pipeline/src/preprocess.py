@@ -32,7 +32,7 @@ def preprocess():
     # TODO save as (huggingface) dataset
     
     # save num_of_labels
-    np.save(os.path.join("/opt/ml/processing/output/labels", "num_labels.npy"), encoder.num_cat)
+    # np.save(os.path.join("/opt/ml/processing/output/labels", "num_labels.npy"), encoder.num_cat)
 
 
 if __name__ == "__main__":

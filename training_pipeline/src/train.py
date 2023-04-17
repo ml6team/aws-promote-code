@@ -18,6 +18,7 @@ from sagemaker.utils import unique_name_from_base
 
 
 from utils.helper import load_dataset, load_num_labels, get_model
+from utils import config
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -39,8 +40,8 @@ def parse_args():
                         default=os.environ.get('SM_CHANNEL_TRAIN'))
     parser.add_argument('--test', type=str,
                         default=os.environ.get('SM_CHANNEL_TEST'))
-    parser.add_argument('--labels', type=str,
-                        default=os.environ.get('SM_CHANNEL_LABELS'))
+    # parser.add_argument('--labels', type=str,
+    #                     default=os.environ.get('SM_CHANNEL_LABELS'))
 
     # model directory
     parser.add_argument('--sm-model-dir', type=str,
@@ -81,7 +82,8 @@ def train(run):
         test_dataset, shuffle=True, batch_size=args.batch_size)
 
     logger.info('Training model')
-    num_labels = load_num_labels(args.labels)
+    # num_labels = load_num_labels(args.labels)
+    num_labels = len(config.MEDICAL_CATEGORIES)
     model = get_model(num_labels)
     optimizer = AdamW(model.parameters(), lr=args.learning_rate)
 

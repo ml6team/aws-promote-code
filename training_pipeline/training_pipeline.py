@@ -4,6 +4,7 @@ import json
 import os
 import argparse
 
+from sagemaker.processing import ScriptProcessor
 from sagemaker.workflow.steps import ProcessingStep, TrainingStep, TuningStep
 from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.properties import PropertyFile
@@ -46,6 +47,8 @@ train_image_uri = f"{args.account}.dkr.ecr.{args.region}.amazonaws.com/training-
 model_path = f"s3://{default_bucket}/model"
 data_path = f"s3://{default_bucket}/data"
 model_package_group_name = f"{args.pipeline_name}ModelGroup"
+model_package_group_arn = f"arn:aws:sagemaker:{args.region}:{args.account}:" \
+    f"model-package/{model_package_group_name}"
 pipeline_name = args.pipeline_name
 
 gpu_instance_type = "ml.g4dn.xlarge"
@@ -64,7 +67,7 @@ cache_config = CacheConfig(enable_caching=True, expire_after="30d")
 
 epoch_count = ParameterInteger(
     name="epochs",
-    default_value=5
+    default_value=1
 )
 batch_size = ParameterInteger(
     name="batch_size",
@@ -105,9 +108,6 @@ preprocess_step_args = script_preprocess.run(
                          source="/opt/ml/processing/output/train"),
         ProcessingOutput(output_name="test",
                          source="/opt/ml/processing/output/test"),
-        ProcessingOutput(output_name="labels",
-                         source="/opt/ml/processing/output/labels"),
-
     ],
     code="preprocess.py",
     source_dir="src",
@@ -120,7 +120,7 @@ step_preprocess = ProcessingStep(
 )
 
 # ======================================================
-# Step 2: Train Huggingface model and optionally finetune hyperparams
+# Step 2: Train Huggingface model and optionally finetune hyperparameter
 # ======================================================
 
 estimator = HuggingFace(
@@ -143,73 +143,68 @@ estimator.set_hyperparameters(
     learning_rate=learning_rate,
 )
 
-if tune_hyperparameter:
-    hyperparameter_ranges = {
-        "learning_rate": CategoricalParameter([1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6]),
+# if tune_hyperparameter:
+#     hyperparameter_ranges = {
+#         "learning_rate": CategoricalParameter([1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6]),
 
-    }
+#     }
 
-    objective_metric_name = "average test f1"
-    objective_type = "Maximize"
-    metric_definitions = [{"Name": "average test f1",
-                           "Regex": "Test set: Average f1: ([0-9\\.]+)"}]
+#     objective_metric_name = "average test f1"
+#     objective_type = "Maximize"
+#     metric_definitions = [{"Name": "average test f1",
+#                            "Regex": "Test set: Average f1: ([0-9\\.]+)"}]
 
-    tuner = HyperparameterTuner(
-        estimator,
-        objective_metric_name,
-        hyperparameter_ranges,
-        metric_definitions,
-        max_jobs=6,
-        max_parallel_jobs=1,
-        objective_type=objective_type,
-    )
+#     tuner = HyperparameterTuner(
+#         estimator,
+#         objective_metric_name,
+#         hyperparameter_ranges,
+#         metric_definitions,
+#         max_jobs=6,
+#         max_parallel_jobs=1,
+#         objective_type=objective_type,
+#     )
 
-    step_train = TuningStep(
-        name="tune-model",
-        cache_config=cache_config,
-        step_args=tuner.fit(
-            inputs={
-                "train": TrainingInput(
-                    s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-                        "train"].S3Output.S3Uri,
-                    content_type="text/csv",
-                ),
-                "test": TrainingInput(
-                    s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-                        "test"].S3Output.S3Uri,
-                    content_type="text/csv",
-                ),
-                "labels": TrainingInput(
-                    s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-                        "labels"].S3Output.S3Uri,
-                    content_type="text/csv",
-                )
-            },
+#     step_train = TuningStep(
+#         name="tune-model",
+#         cache_config=cache_config,
+#         step_args=tuner.fit(
+#             inputs={
+#                 "train": TrainingInput(
+#                     s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
+#                         "train"].S3Output.S3Uri,
+#                     content_type="text/csv",
+#                 ),
+#                 "test": TrainingInput(
+#                     s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
+#                         "test"].S3Output.S3Uri,
+#                     content_type="text/csv",
+#                 ),
+#                 "labels": TrainingInput(
+#                     s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
+#                         "labels"].S3Output.S3Uri,
+#                     content_type="text/csv",
+#                 )
+#             },
+#         ),
+#     )
+# else:
+step_train = TrainingStep(
+    name="train-model",
+    estimator=estimator,
+    cache_config=cache_config,
+    inputs={
+        "train": TrainingInput(
+            s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
+                "train"].S3Output.S3Uri,
+            content_type="text/csv",
         ),
-    )
-else:
-    step_train = TrainingStep(
-        name="train-model",
-        estimator=estimator,
-        cache_config=cache_config,
-        inputs={
-            "train": TrainingInput(
-                s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-                    "train"].S3Output.S3Uri,
-                content_type="text/csv",
-            ),
-            "test": TrainingInput(
-                s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-                    "test"].S3Output.S3Uri,
-                content_type="text/csv",
-            ),
-            "labels": TrainingInput(
-                s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-                    "labels"].S3Output.S3Uri,
-                content_type="text/csv",
-            )
-        },
-    )
+        "test": TrainingInput(
+            s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
+                "test"].S3Output.S3Uri,
+            content_type="text/csv",
+        ),
+    },
+)
 
 
 # ======================================================
@@ -242,11 +237,6 @@ eval_step_args = script_eval.run(
         ProcessingInput(
             source=step_train.properties.ModelArtifacts.S3ModelArtifacts,
             destination="/opt/ml/processing/model",),
-        ProcessingInput(
-            source=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-                "labels"].S3Output.S3Uri,
-            destination="/opt/ml/processing/labels",
-        ),
     ],
     outputs=[
         ProcessingOutput(output_name="evaluation",
@@ -293,23 +283,8 @@ model = HuggingFaceModel(
 )
 
 
-step_register_approve = ModelStep(
-    name="register-approved-model",
-    display_name="register-approved-model",
-    step_args=model.register(
-        content_types=["text/csv"],
-        response_types=["text/csv"],
-        inference_instances=[gpu_instance_type, "ml.m5.large"],
-        transform_instances=[gpu_instance_type, "ml.m5.large"],
-        model_package_group_name=model_package_group_name,
-        model_metrics=model_metrics,
-        approval_status="Approved",
-    )
-)
-
 step_register = ModelStep(
     name="register-model",
-    display_name="register-model",
     step_args=model.register(
         content_types=["text/csv"],
         response_types=["text/csv"],
@@ -321,7 +296,32 @@ step_register = ModelStep(
 )
 
 # ======================================================
-# Step 5: Condition for model approval status
+# Step 5: Approve model
+# ======================================================
+
+script_approve = HuggingFaceProcessor(
+    image_uri=train_image_uri,
+    instance_type=gpu_instance_type,
+    instance_count=1,
+    base_job_name="script-approve",
+    role=role,
+    env={
+        "model_package_version": step_register.properties.ModelPackageVersion.to_string(),
+        "model_package_group_arn": model_package_group_arn,
+    },
+    sagemaker_session=sagemaker_session,
+)
+
+
+step_approve = ProcessingStep(
+    name="approve-model",
+    step_args=script_approve.run(
+        code="src/approve.py",
+    ),
+)
+
+# ======================================================
+# Step 6: Condition for model approval status
 # ======================================================
 
 cond_gte = ConditionGreaterThanOrEqualTo(
@@ -330,14 +330,14 @@ cond_gte = ConditionGreaterThanOrEqualTo(
         property_file=evaluation_report,
         json_path="metrics.accuracy.value"
     ),
-    right=0.5
+    right=0.1
 )
 
 step_cond = ConditionStep(
     name="accuracy-check",
     conditions=[cond_gte],
-    if_steps=[step_register_approve],
-    else_steps=[step_register],
+    if_steps=[step_approve],
+    else_steps=[],
 )
 
 # ======================================================
@@ -354,8 +354,10 @@ pipeline = Pipeline(
     steps=[
         step_preprocess,
         step_train,
+        step_register,
         step_eval,
         step_cond,
+
     ],
     sagemaker_session=sagemaker_session,
     pipeline_experiment_config=None,
