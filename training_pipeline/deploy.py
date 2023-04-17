@@ -1,30 +1,45 @@
 """Deploy model from ModelRegistry ModelPackage"""
+import argparse
+import pandas as pd
+
 from sagemaker import ModelPackage
 import boto3
 import sagemaker.session
-import argparse
 
 from sagemaker.model_monitor import DataCaptureConfig
 
 
-def deploy(role_arn: str, model_package_arn: str) -> None:
-    sagemaker_session = sagemaker.session.Session()
+def get_latest_approved_model(model_package_group_name):
+    """Retrieves the latest approved model from a given SageMaker model package group."""
+    sm_client = boto3.client('sagemaker')
+    df = pd.DataFrame(sm_client.list_model_packages(
+        ModelPackageGroupName=model_package_group_name)["ModelPackageSummaryList"])
+    model_package_arn = df.loc[df.ModelApprovalStatus ==
+                               "Approved"].iloc[0].ModelPackageArn
+    print(f"The latest approved model-arn is: {model_package_arn}")
+    return model_package_arn
 
+
+def approve_model(model_package_arn):
     # update model status to 'approved'
     model_package_update_input_dict = {
         "ModelPackageArn": model_package_arn,
         "ModelApprovalStatus": "Approved"
     }
     sm_client = boto3.Session().client('sagemaker')
-    _ = sm_client.update_model_package(
-        **model_package_update_input_dict)
+    sm_client.update_model_package(**model_package_update_input_dict)
+
+
+def deploy(role_arn: str, model_package_arn: str) -> None:
+    print(f"Deploy model: {model_package_arn}")
+    sagemaker_session = sagemaker.session.Session()
 
     # deploy model to endpoint
     model = ModelPackage(role=role_arn, model_package_arn=model_package_arn,
                          sagemaker_session=sagemaker_session)
 
     data_capture_config = DataCaptureConfig(
-        enable_capture = True, 
+        enable_capture=True,
         # sampling_percentage = sampling_percentage, # Optional
         # destination_s3_uri = s3_capture_upload_path, # Optional
     )
@@ -44,14 +59,18 @@ if __name__ == "__main__":
     parser.add_argument('--region', type=str, default="eu-west-3")
     parser.add_argument('--model-package-name', type=str,
                         default="training-pipelineModelGroup")
-    parser.add_argument('--model-version', type=int, default=1)
+    parser.add_argument('--model-version', type=int)
     args = parser.parse_args()
 
     iam = boto3.client('iam')
     role_arn = iam.get_role(
         RoleName=f'{args.account}-sagemaker-exec')['Role']['Arn']
 
-    model_package_arn = f"arn:aws:sagemaker:{args.region}:{args.account}:" \
-                        f"model-package/{args.model_package_name}/{str(args.model_version)}"
+    if args.model_version is not None:
+        model_package_arn = f"arn:aws:sagemaker:{args.region}:{args.account}:" \
+                            f"model-package/{args.model_package_name}/{str(args.model_version)}"
 
-    deploy(role_arn=role_arn, model_package_arn=model_package_arn)
+        deploy(role_arn=role_arn, model_package_arn=model_package_arn)
+    else:
+        model_package_arn = get_latest_approved_model(args.model_package_name)
+        deploy(role_arn=role_arn, model_package_arn=model_package_arn)
