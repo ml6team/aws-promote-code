@@ -14,10 +14,15 @@ def get_latest_approved_model(model_package_group_name):
     sm_client = boto3.client('sagemaker')
     df = pd.DataFrame(sm_client.list_model_packages(
         ModelPackageGroupName=model_package_group_name)["ModelPackageSummaryList"])
-    model_package_arn = df.loc[df.ModelApprovalStatus ==
-                               "Approved"].iloc[0].ModelPackageArn
-    print(f"The latest approved model-arn is: {model_package_arn}")
-    return model_package_arn
+    try:
+        model_package_arn = df.loc[df.ModelApprovalStatus ==
+                                   "Approved"].iloc[0].ModelPackageArn
+        print(f"The latest approved model-arn is: {model_package_arn}")
+        return model_package_arn
+
+    except IndexError:
+        raise SystemExit(
+            f"There is no approved model in the model-group '{model_package_group_name}'")
 
 
 def approve_model(model_package_arn):
