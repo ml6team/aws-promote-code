@@ -4,7 +4,7 @@ import pandas as pd
 import os
 import logging
 
-from utils.helper import MyTokenizer, Encoder
+from utils.ml_pipeline_components import MyTokenizer, Encoder
 
 def preprocess():
     logging.info('fetching dataset')

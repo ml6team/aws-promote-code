@@ -59,10 +59,6 @@ def load_dataset(dir, file_extension: str):
     return MyDataset(x, y)
 
 
-def load_num_labels(label_dir: str) -> int:
-    return np.load(os.path.join(label_dir, 'num_labels.npy'))[0]
-
-
 def get_model(num_labels: int):
     return AutoModelForSequenceClassification.from_pretrained(
         config.MODEL_NAME,

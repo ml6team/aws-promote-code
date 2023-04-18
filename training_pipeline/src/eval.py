@@ -1,19 +1,16 @@
 """ Pipeline Evaluation Step: The trained model is load and test in the test data """
 import numpy as np
-import os
 import logging
 import json
 import pathlib
 import tarfile
-
-from joblib import dump, load
 from sklearn import metrics
 
 import torch
 from torch.utils.data import DataLoader
 from sklearn.metrics import f1_score, accuracy_score
 
-from utils.helper import load_dataset, load_num_labels, get_model
+from utils.ml_pipeline_components import load_dataset, get_model
 from utils import config
 
 

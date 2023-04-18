@@ -11,7 +11,7 @@ import torch
 from torch.utils.data import DataLoader
 # from sagemaker_containers.beta.framework import worker, encoders
 
-from utils.helper import get_model, MyTokenizer, MyDataset
+from utils.ml_pipeline_components import get_model, MyTokenizer, MyDataset
 from utils import config
 
 logger = logging.getLogger(__name__)

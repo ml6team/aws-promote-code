@@ -42,7 +42,7 @@ iam = boto3.client("iam")
 role = iam.get_role(RoleName=f"{args.account}-sagemaker-exec")['Role']['Arn']
 
 default_bucket = sagemaker_session.default_bucket()
-train_image_uri = f"{args.account}.dkr.ecr.{args.region}.amazonaws.com/training-image:latest"
+custom_image_uri = f"{args.account}.dkr.ecr.{args.region}.amazonaws.com/training-image:latest"
 
 model_path = f"s3://{default_bucket}/model"
 data_path = f"s3://{default_bucket}/data"
@@ -55,7 +55,7 @@ gpu_instance_type = "ml.g4dn.xlarge"
 pytorch_version = "1.9.0"
 transformers_version = "4.11.0"
 py_version = "py38"
-requirement_dependencies = ['images/inference/requirements.txt']
+requirement_dependencies = ['images/train/requirements.txt']
 
 tune_hyperparameter = False
 
@@ -67,7 +67,7 @@ cache_config = CacheConfig(enable_caching=True, expire_after="30d")
 
 epoch_count = ParameterInteger(
     name="epochs",
-    default_value=1
+    default_value=5
 )
 batch_size = ParameterInteger(
     name="batch_size",
@@ -85,7 +85,7 @@ learning_rate = ParameterFloat(
 
 script_preprocess = HuggingFaceProcessor(
     instance_type=gpu_instance_type,
-    image_uri=train_image_uri,
+    image_uri=custom_image_uri,
     instance_count=1,
     base_job_name="preprocess-script",
     role=role,
@@ -143,51 +143,6 @@ estimator.set_hyperparameters(
     learning_rate=learning_rate,
 )
 
-# if tune_hyperparameter:
-#     hyperparameter_ranges = {
-#         "learning_rate": CategoricalParameter([1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6]),
-
-#     }
-
-#     objective_metric_name = "average test f1"
-#     objective_type = "Maximize"
-#     metric_definitions = [{"Name": "average test f1",
-#                            "Regex": "Test set: Average f1: ([0-9\\.]+)"}]
-
-#     tuner = HyperparameterTuner(
-#         estimator,
-#         objective_metric_name,
-#         hyperparameter_ranges,
-#         metric_definitions,
-#         max_jobs=6,
-#         max_parallel_jobs=1,
-#         objective_type=objective_type,
-#     )
-
-#     step_train = TuningStep(
-#         name="tune-model",
-#         cache_config=cache_config,
-#         step_args=tuner.fit(
-#             inputs={
-#                 "train": TrainingInput(
-#                     s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-#                         "train"].S3Output.S3Uri,
-#                     content_type="text/csv",
-#                 ),
-#                 "test": TrainingInput(
-#                     s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-#                         "test"].S3Output.S3Uri,
-#                     content_type="text/csv",
-#                 ),
-#                 "labels": TrainingInput(
-#                     s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-#                         "labels"].S3Output.S3Uri,
-#                     content_type="text/csv",
-#                 )
-#             },
-#         ),
-#     )
-# else:
 step_train = TrainingStep(
     name="train-model",
     estimator=estimator,
@@ -213,7 +168,7 @@ step_train = TrainingStep(
 
 script_eval = HuggingFaceProcessor(
     instance_type=gpu_instance_type,
-    image_uri=train_image_uri,
+    image_uri=custom_image_uri,
     instance_count=1,
     base_job_name="eval-script",
     role=role,
@@ -299,8 +254,10 @@ step_register = ModelStep(
 # Step 5: Approve model
 # ======================================================
 
-script_approve = HuggingFaceProcessor(
-    image_uri=train_image_uri,
+# script_approve = HuggingFaceProcessor(
+script_approve = ScriptProcessor(
+    
+    image_uri=custom_image_uri,
     instance_type=gpu_instance_type,
     instance_count=1,
     base_job_name="script-approve",

@@ -74,8 +74,7 @@ if __name__ == "__main__":
     if args.model_version is not None:
         model_package_arn = f"arn:aws:sagemaker:{args.region}:{args.account}:" \
                             f"model-package/{args.model_package_name}/{str(args.model_version)}"
-
-        deploy(role_arn=role_arn, model_package_arn=model_package_arn)
     else:
         model_package_arn = get_latest_approved_model(args.model_package_name)
-        deploy(role_arn=role_arn, model_package_arn=model_package_arn)
+    
+    deploy(role_arn=role_arn, model_package_arn=model_package_arn)

@@ -17,7 +17,7 @@ from sagemaker.experiments.run import Run
 from sagemaker.utils import unique_name_from_base
 
 
-from utils.helper import load_dataset, load_num_labels, get_model
+from utils.ml_pipeline_components import load_dataset, get_model
 from utils import config
 
 logger = logging.getLogger(__name__)
