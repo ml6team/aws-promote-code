@@ -37,7 +37,16 @@ To run the training pipeline, start the pipeline job with:
 python training_pipeline.py
 ```
 
-The training pipeline preprocesses the data, trains and registers a model and if it achieves a certain accuracy on the test data, will also be approved for deployment.
+The training pipeline steps are described in detail in the following table:
+
+| Nr | Step name | Description |
+| --------------- | --------------- | --------------- |
+| 1 | preprocess-data | The training and test data is loaded from the S3 bucket as Pandas DataFrames. The column 'transcription' is the text training input and is tokenized with the Huggingface [AutoTokenizer](https://huggingface.co/docs/transformers/model_doc/auto#transformers.AutoTokenizer). The column 'medical_specialty' is the classification target and is encoded numerically. Both training and test data are saved as NumPy Arrays to the S3 bucket and made available to other pipeline steps as input.|
+| 2 | train-model | The pre-trained [Huggingface BERT model](https://huggingface.co/distilbert-base-uncased) is fine-tuned on the training data. The Training and Test data are loaded as a PyTorch Dataset. For training the 'AdamW' optimizer with a learning rate of '1e-5' is used, the model is evaluated on the test data every epoch and the metrics are tracked with SageMaker Experiments. After training the model weights are saved to the S3 bucket.|
+| 3 | register-model | Every trained model is registered to the SageMaker Model Registry in a Model Group. |
+| 4 | eval-model | After training the model is evaluated on the test data and the results are used for the accuracy check. If the prerequisites are meet the 'approve-model' step is run.|
+| 5 | approve-model | The model status of the registered model in the Model Group is updated to 'approved' and now can be used to deploy a Model endpoint or for a Batch Transformation Job.|
+
 
 ![Training Pipeline Image](/readme_images/training_pipeline.png)
 

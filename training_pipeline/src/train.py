@@ -82,7 +82,6 @@ def train(run):
         test_dataset, shuffle=True, batch_size=args.batch_size)
 
     logger.info('Training model')
-    # num_labels = load_num_labels(args.labels)
     num_labels = len(config.MEDICAL_CATEGORIES)
     model = get_model(num_labels)
     optimizer = AdamW(model.parameters(), lr=args.learning_rate)
