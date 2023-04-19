@@ -20,8 +20,8 @@ class MyTokenizer:
 
 
 class Encoder:
-    def __init__(self, train_data, test_data) -> None:
-        self.df = pd.concat([train_data, test_data])
+    def __init__(self, train_data, test_data, val_data) -> None:
+        self.df = pd.concat([train_data, test_data, val_data])
         categories = self.df.medical_specialty.astype(
             "category").cat.categories
         self.cat_dict = {cat: i for i, cat in enumerate(categories)}
@@ -48,7 +48,7 @@ class MyDataset(Dataset):
 
 
 def load_dataset(dir, file_extension: str):
-    allowed_extensions = ["train", "test"]
+    allowed_extensions = ["train", "test", "val"]
     if file_extension not in allowed_extensions:
         raise ValueError("Invalid extension. Expected one of: %s" %
                          allowed_extensions)

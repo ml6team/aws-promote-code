@@ -1,4 +1,4 @@
-""" Pipeline Evaluation Step: The trained model is load and test in the test data """
+""" Pipeline Evaluation Step: The trained model is loaded and evaluated on the eval data"""
 import numpy as np
 import logging
 import json
@@ -16,7 +16,7 @@ from utils import config
 
 def eval_model():
 
-    dataset = load_dataset("/opt/ml/processing/test", "test")
+    dataset = load_dataset("/opt/ml/processing/val", "val")
     dataloader = DataLoader(dataset, shuffle=True, batch_size=10)
     # num_labels = load_num_labels("/opt/ml/processing/labels")
     num_labels = len(config.MEDICAL_CATEGORIES)

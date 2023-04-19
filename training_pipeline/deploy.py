@@ -12,17 +12,18 @@ from sagemaker.model_monitor import DataCaptureConfig
 def get_latest_approved_model(model_package_group_name):
     """Retrieves the latest approved model from a given SageMaker model package group."""
     sm_client = boto3.client('sagemaker')
-    df = pd.DataFrame(sm_client.list_model_packages(
-        ModelPackageGroupName=model_package_group_name)["ModelPackageSummaryList"])
-    try:
-        model_package_arn = df.loc[df.ModelApprovalStatus ==
-                                   "Approved"].iloc[0].ModelPackageArn
+    model_package_arns = sm_client.list_model_packages(
+        ModelPackageGroupName=model_package_group_name)["ModelPackageSummaryList"]
+    
+    approved_model_package_arns = [d for d in model_package_arns if d['ModelApprovalStatus'] == "Approved"]
+    
+    if len(approved_model_package_arns) != 0:
+        model_package_arn = approved_model_package_arns[0]["ModelPackageArn"]
         print(f"The latest approved model-arn is: {model_package_arn}")
         return model_package_arn
 
-    except IndexError:
-        raise SystemExit(
-            f"There is no approved model in the model-group '{model_package_group_name}'")
+    else:
+        print(f"There is no approved model in the model-group '{model_package_group_name}'")
 
 
 def approve_model(model_package_arn):

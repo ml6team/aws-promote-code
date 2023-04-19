@@ -102,12 +102,18 @@ preprocess_step_args = script_preprocess.run(
             source=os.path.join(data_path, "test.csv"),
             destination="/opt/ml/processing/input/test",
         ),
+        ProcessingInput(
+            source=os.path.join(data_path, "val.csv"),
+            destination="/opt/ml/processing/input/val",
+        ),
     ],
     outputs=[
         ProcessingOutput(output_name="train",
                          source="/opt/ml/processing/output/train"),
         ProcessingOutput(output_name="test",
                          source="/opt/ml/processing/output/test"),
+        ProcessingOutput(output_name="val",
+                         source="/opt/ml/processing/output/val"),
     ],
     code="preprocess.py",
     source_dir="src",
@@ -185,9 +191,9 @@ eval_step_args = script_eval.run(
     inputs=[
         ProcessingInput(
             source=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-                "test"
+                "val"
             ].S3Output.S3Uri,
-            destination="/opt/ml/processing/test",
+            destination="/opt/ml/processing/val",
         ),
         ProcessingInput(
             source=step_train.properties.ModelArtifacts.S3ModelArtifacts,
@@ -256,7 +262,7 @@ step_register = ModelStep(
 
 # script_approve = HuggingFaceProcessor(
 script_approve = ScriptProcessor(
-    
+    command=["python3"],
     image_uri=custom_image_uri,
     instance_type=gpu_instance_type,
     instance_count=1,
