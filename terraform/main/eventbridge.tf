@@ -47,3 +47,28 @@ resource "aws_iam_role_policy_attachment" "eventbridge_startpipeline_access" {
   role       = aws_iam_role.eventbridge_scheduler_exec_role.name
   policy_arn = aws_iam_policy.sagemaker_startpipeline_policy.arn
 }
+
+#################################################
+# EventBridge Scheduler to trigger the pipeline periodically
+#################################################
+
+resource "aws_scheduler_schedule" "training_pipeline_scheduler" {
+  name  = "training-pipeline-scheduler"
+#   state = "DISABLED"
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  schedule_expression = "rate(7 days)"
+
+  target {
+    arn      = "arn:aws:sagemaker:eu-west-3:${var.account}:pipeline/training-pipeline"
+    role_arn = aws_iam_role.eventbridge_scheduler_exec_role.arn
+    sagemaker_pipeline_parameters {
+      pipeline_parameter {
+        name   = "epochs"
+        value = "10"
+      }
+    }
+  }
+}
