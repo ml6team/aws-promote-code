@@ -14,16 +14,18 @@ def get_latest_approved_model(model_package_group_name):
     sm_client = boto3.client('sagemaker')
     model_package_arns = sm_client.list_model_packages(
         ModelPackageGroupName=model_package_group_name)["ModelPackageSummaryList"]
-    
-    approved_model_package_arns = [d for d in model_package_arns if d['ModelApprovalStatus'] == "Approved"]
-    
+
+    approved_model_package_arns = [
+        d for d in model_package_arns if d['ModelApprovalStatus'] == "Approved"]
+
     if len(approved_model_package_arns) != 0:
         model_package_arn = approved_model_package_arns[0]["ModelPackageArn"]
         print(f"The latest approved model-arn is: {model_package_arn}")
         return model_package_arn
 
     else:
-        print(f"There is no approved model in the model-group '{model_package_group_name}'")
+        print(
+            f"There is no approved model in the model-group '{model_package_group_name}'")
 
 
 def approve_model(model_package_arn):
@@ -77,5 +79,5 @@ if __name__ == "__main__":
                             f"model-package/{args.model_package_name}/{str(args.model_version)}"
     else:
         model_package_arn = get_latest_approved_model(args.model_package_name)
-    
+
     deploy(role_arn=role_arn, model_package_arn=model_package_arn)

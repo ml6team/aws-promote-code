@@ -12,7 +12,7 @@ def upload_df(df, file_name):
     """Upload Pandas Dataframe to Sagemaker default bucket"""
     default_bucket = sagemaker_session.default_bucket()
     csv_buffer = StringIO()
-    df.to_csv(csv_buffer)
+    df.to_csv(csv_buffer, index=False)
     s3_resource = boto3.resource('s3')
     s3_resource.Object(
         default_bucket, f'data/{file_name}').put(Body=csv_buffer.getvalue())
