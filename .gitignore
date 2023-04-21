@@ -161,3 +161,6 @@ cython_debug/
 
 # Terraform
 terraform/main/.terraform/
+
+# Sagemaker generated repack files
+*_repack*
