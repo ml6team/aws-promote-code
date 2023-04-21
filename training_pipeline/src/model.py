@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 import torch
 from torch.utils.data import DataLoader
+
 # from sagemaker_containers.beta.framework import worker, encoders
 
 from utils.ml_pipeline_components import get_model, MyTokenizer, MyDataset
@@ -21,7 +22,7 @@ logger.addHandler(logging.StreamHandler(sys.stdout))
 
 def input_fn(input_data, content_type):
     """Parse input data payload"""
-    logger.info('input_fn')
+    logger.info("input_fn")
     if content_type == "application/json":
         input_dict = json.loads(input_data)
         return input_dict["instances"]
@@ -35,19 +36,20 @@ def input_fn(input_data, content_type):
 
 def output_fn(prediction, accept):
     """Format prediction output"""
-    logger.info('output_fn')
+    logger.info("output_fn")
     if accept == "application/json":
         return {"prediction": prediction}
     elif accept == "text/csv":
         return prediction
     else:
         raise RuntimeError(
-            "{} accept type is not supported by this script.".format(accept))
+            "{} accept type is not supported by this script.".format(accept)
+        )
 
 
 def predict_fn(input_data, model):
     """Process input data"""
-    logger.info('predict_fn')
+    logger.info("predict_fn")
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     logger.info(f"Device: {device}")
@@ -55,8 +57,9 @@ def predict_fn(input_data, model):
     model.eval()
     model.to(device)
     tok = MyTokenizer()
-    input = tok.tokenizer(input_data, padding="max_length",
-                          return_tensors='pt', truncation=True)
+    input = tok.tokenizer(
+        input_data, padding="max_length", return_tensors="pt", truncation=True
+    )
 
     dataset = MyDataset(input.input_ids, input.attention_mask)
     dataloader = DataLoader(dataset, shuffle=False, batch_size=10)
@@ -71,9 +74,12 @@ def predict_fn(input_data, model):
 
 def model_fn(model_dir):
     """Deserialize/load fitted model"""
-    logger.info('model_fn')
+    logger.info("model_fn")
     model = get_model(num_labels=len(config.MEDICAL_CATEGORIES))
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model.load_state_dict(torch.load(os.path.join(
-        model_dir, "model.joblib"), map_location=torch.device(device)))
+    model.load_state_dict(
+        torch.load(
+            os.path.join(model_dir, "model.joblib"), map_location=torch.device(device)
+        )
+    )
     return model

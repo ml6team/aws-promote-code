@@ -22,8 +22,7 @@ class MyTokenizer:
 class Encoder:
     def __init__(self, train_data, test_data, val_data) -> None:
         self.df = pd.concat([train_data, test_data, val_data])
-        categories = self.df.medical_specialty.astype(
-            "category").cat.categories
+        categories = self.df.medical_specialty.astype("category").cat.categories
         self.cat_dict = {cat: i for i, cat in enumerate(categories)}
         self.val_dict = {i: cat for i, cat in enumerate(categories)}
         self.num_cat = np.array([len(self.cat_dict)])
@@ -50,8 +49,7 @@ class MyDataset(Dataset):
 def load_dataset(dir, file_extension: str):
     allowed_extensions = ["train", "test", "val"]
     if file_extension not in allowed_extensions:
-        raise ValueError("Invalid extension. Expected one of: %s" %
-                         allowed_extensions)
+        raise ValueError("Invalid extension. Expected one of: %s" % allowed_extensions)
 
     x = np.load(os.path.join(dir, f"x_{file_extension}.npy"))
     y = np.load(os.path.join(dir, f"y_{file_extension}.npy"))

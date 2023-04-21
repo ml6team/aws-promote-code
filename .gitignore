@@ -164,3 +164,5 @@ terraform/main/.terraform/
 
 # Sagemaker generated repack files
 *_repack*
+
+.DS_Store

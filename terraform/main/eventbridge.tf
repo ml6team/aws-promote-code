@@ -53,8 +53,8 @@ resource "aws_iam_role_policy_attachment" "eventbridge_startpipeline_access" {
 #################################################
 
 resource "aws_scheduler_schedule" "training_pipeline_scheduler" {
-  name  = "training-pipeline-scheduler"
-#   state = "DISABLED"
+  name = "training-pipeline-scheduler"
+  #   state = "DISABLED"
   flexible_time_window {
     mode = "OFF"
   }
@@ -66,7 +66,7 @@ resource "aws_scheduler_schedule" "training_pipeline_scheduler" {
     role_arn = aws_iam_role.eventbridge_scheduler_exec_role.arn
     sagemaker_pipeline_parameters {
       pipeline_parameter {
-        name   = "epochs"
+        name  = "epochs"
         value = "10"
       }
     }
