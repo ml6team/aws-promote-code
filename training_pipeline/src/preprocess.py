@@ -1,4 +1,4 @@
-""" Pipeline Preprocessing Step: Train and test text data is tokenized and the targets are encoded """
+"""Pipeline Preprocessing Step: Train and test text data is tokenized and the targets are encoded"""
 import numpy as np
 import pandas as pd
 import os
@@ -19,11 +19,11 @@ def preprocess():
     tokenizer = MyTokenizer()
     x_train = [tokenizer.tokenize(v) for v in df_train.transcription.values]
     x_test = [tokenizer.tokenize(v) for v in df_test.transcription.values]
-    x_val = [tokenizer.tokenize(v) for v in df_val.transcription.values]
+    [tokenizer.tokenize(v) for v in df_val.transcription.values]
     encoder = Encoder(df_train, df_test, df_val)
     y_train = [encoder.encode(c) for c in df_train.medical_specialty.values]
     y_test = [encoder.encode(c) for c in df_test.medical_specialty.values]
-    y_val = [encoder.encode(c) for c in df_val.medical_specialty.values]
+    [encoder.encode(c) for c in df_val.medical_specialty.values]
 
     logging.info('saving dataset')
 

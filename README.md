@@ -69,3 +69,13 @@ The model is deployed as a Sagemaker Endpoint.
 
 For testing model inference the Notebook `test.ipynb` is used. There the model inference for single inputs, but also for batch-inference can be tested.
 
+## Contributing
+
+We use [poetry](https://python-poetry.org/docs/) and [pre-commit](https://pre-commit.com/) to 
+enable a smooth developer flow. Run the following commands to set up your development environment:
+
+```commandline
+pip install poetry
+poetry install
+pre-commit install
+```

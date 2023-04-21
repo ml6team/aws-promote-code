@@ -1,0 +1,42 @@
+[tool.poetry]
+name = "aws-promote-code"
+version = "0.1.dev0"
+description = "Sample repository for MLOps flow promoting code instead of models"
+readme = "README.md"
+keywords = ["machine learining", "MLOps", "AWS"]
+license = "Apache-2.0"
+authors = [
+    "Miro Göttler <miro.goettler@ml6.eu>",
+    "Robbe Sneyders <robbe.sneyders@ml6.eu>",
+]
+maintainers = [
+    "Miro Göttler <miro.goettler@ml6.eu>",
+    "Robbe Sneyders <robbe.sneyders@ml6.eu>",
+]
+repository = "https://github.com/ml6team/aws-promote-code"
+include = ["*.txt", "*.rst", "*.md"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development",
+    "Typing :: Typed",
+]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.group.test.dependencies]
+liccheck = "^0.7.3"
+pre-commit = "^3.1.1"
+
+[tool.ruff]
+line-length = 100  # Only for comments, as code is handled by black at length 88

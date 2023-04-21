@@ -1,6 +1,5 @@
 """Deploy model from ModelRegistry ModelPackage"""
 import argparse
-import pandas as pd
 
 from sagemaker import ModelPackage
 import boto3

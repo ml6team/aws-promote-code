@@ -5,7 +5,7 @@ import os
 import argparse
 
 from sagemaker.processing import ScriptProcessor
-from sagemaker.workflow.steps import ProcessingStep, TrainingStep, TuningStep
+from sagemaker.workflow.steps import ProcessingStep, TrainingStep
 from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.properties import PropertyFile
 from sagemaker.workflow.parameters import ParameterInteger, ParameterFloat
@@ -19,7 +19,6 @@ from sagemaker.workflow.steps import CacheConfig
 from sagemaker.huggingface import HuggingFaceProcessor, HuggingFace
 from sagemaker.huggingface.model import HuggingFaceModel
 from sagemaker.workflow.model_step import ModelStep
-from sagemaker.tuner import IntegerParameter, CategoricalParameter, ContinuousParameter, HyperparameterTuner
 
 from sagemaker.workflow.pipeline_context import PipelineSession
 
