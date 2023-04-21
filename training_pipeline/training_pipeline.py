@@ -34,9 +34,6 @@ region = boto3.Session(region_name=args.region).region_name
 
 sagemaker_session = PipelineSession()
 
-# try:
-#     role = sagemaker.get_execution_role()
-# except ValueError:
 
 iam = boto3.client("iam")
 role = iam.get_role(RoleName=f"{args.account}-sagemaker-exec")['Role']['Arn']
