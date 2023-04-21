@@ -16,26 +16,11 @@ jobs:
       with:
         python-version:  ${{ matrix.python-version }}
 
-    - name: cache pip
-      uses: actions/cache@v2
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-          ${{ runner.os }}-
-
-    - name: pylint
+    - name: Install dependencies
       run: |
-        pip install $(cat requirements.txt | grep pylint)
-        python pylint.py --modules-file pylint-modules
+        pip install --upgrade pip
+        pip install poetry==1.4.0
+        poetry install
 
-    - name: bandit
-      run: |
-        pip install $(cat requirements.txt | grep bandit)
-        bandit -r .
-
-    - name: license_check
-      run: |
-        pip install $(cat requirements.txt | grep liccheck)
-        ./run_license_check.sh --modules-file pylint-modules
+    - name: Test with pre-commit
+      run: poetry run pre-commit run --all-files --show-diff-on-failure

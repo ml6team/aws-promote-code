@@ -4,7 +4,6 @@ import logging
 import json
 import pathlib
 import tarfile
-from sklearn import metrics
 
 import torch
 from torch.utils.data import DataLoader
@@ -24,7 +23,7 @@ def eval_model():
     logging.info('Fetching model')
     model = get_model(num_labels)
 
-    model_path = f"/opt/ml/processing/model/model.tar.gz"
+    model_path = "/opt/ml/processing/model/model.tar.gz"
     with tarfile.open(model_path, "r:gz") as tar:
         tar.extractall("./model")
 
