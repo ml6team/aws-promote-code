@@ -26,7 +26,7 @@ logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def parse_args():
-    logger.info('reading arguments')
+    logger.info("reading arguments")
 
     parser = argparse.ArgumentParser()
 
@@ -36,16 +36,15 @@ def parse_args():
     parser.add_argument("--learning_rate", type=float, required=True)
 
     # data directories
-    parser.add_argument('--train', type=str,
-                        default=os.environ.get('SM_CHANNEL_TRAIN'))
-    parser.add_argument('--test', type=str,
-                        default=os.environ.get('SM_CHANNEL_TEST'))
+    parser.add_argument("--train", type=str, default=os.environ.get("SM_CHANNEL_TRAIN"))
+    parser.add_argument("--test", type=str, default=os.environ.get("SM_CHANNEL_TEST"))
     # parser.add_argument('--labels', type=str,
     #                     default=os.environ.get('SM_CHANNEL_LABELS'))
 
     # model directory
-    parser.add_argument('--sm-model-dir', type=str,
-                        default=os.environ.get('SM_MODEL_DIR'))
+    parser.add_argument(
+        "--sm-model-dir", type=str, default=os.environ.get("SM_MODEL_DIR")
+    )
 
     # args = parser.parse_args()
     return parser.parse_known_args()
@@ -71,17 +70,17 @@ def train(run):
 
     log_interval = 100
 
-    logger.info('Load train data')
+    logger.info("Load train data")
     train_dataset = load_dataset(args.train, "train")
     train_dataloader = DataLoader(
-        train_dataset, shuffle=True, batch_size=args.batch_size)
+        train_dataset, shuffle=True, batch_size=args.batch_size
+    )
 
-    logger.info('Load test data')
+    logger.info("Load test data")
     test_dataset = load_dataset(args.test, "test")
-    test_dataloader = DataLoader(
-        test_dataset, shuffle=True, batch_size=args.batch_size)
+    test_dataloader = DataLoader(test_dataset, shuffle=True, batch_size=args.batch_size)
 
-    logger.info('Training model')
+    logger.info("Training model")
     num_labels = len(config.MEDICAL_CATEGORIES)
     model = get_model(num_labels)
     optimizer = AdamW(model.parameters(), lr=args.learning_rate)
@@ -92,27 +91,29 @@ def train(run):
         name="linear",
         optimizer=optimizer,
         num_warmup_steps=0,
-        num_training_steps=num_training_steps
+        num_training_steps=num_training_steps,
     )
 
-    run.log_parameters({"epoch_count": args.epoch_count,
-                       "batch_size": args.batch_size,
-                        "learning_rate": args.learning_rate})
+    run.log_parameters(
+        {
+            "epoch_count": args.epoch_count,
+            "batch_size": args.batch_size,
+            "learning_rate": args.learning_rate,
+        }
+    )
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     logger.info(f"Training on device: {device}")
 
     model.to(device)
     counter = 0
-    train_loss_ = .0
-    train_acc_ = .0
-    train_f1_ = .0
+    train_loss_ = 0.0
+    train_acc_ = 0.0
+    train_f1_ = 0.0
 
     for epoch in range(num_epochs):
-
         model.train()
         for x, y in train_dataloader:
-
             labels = y.long()
             outputs = model(x.to(device), labels=labels.to(device))
             y_pred = torch.argmax(outputs.logits.cpu(), dim=1)
@@ -128,17 +129,22 @@ def train(run):
 
             # track
             if counter % log_interval == 0:
-                run.log_metric(name="training-loss",
-                               value=train_loss_/log_interval, step=counter)
-                run.log_metric(name="training-accuracy",
-                               value=train_acc_/log_interval, step=counter)
-                run.log_metric(name="training-f1",
-                               value=train_f1_/log_interval, step=counter)
+                run.log_metric(
+                    name="training-loss", value=train_loss_ / log_interval, step=counter
+                )
+                run.log_metric(
+                    name="training-accuracy",
+                    value=train_acc_ / log_interval,
+                    step=counter,
+                )
+                run.log_metric(
+                    name="training-f1", value=train_f1_ / log_interval, step=counter
+                )
                 logger.info(f"Training: step {counter}")
 
-                train_loss_ = .0
-                train_acc_ = .0
-                train_f1_ = .0
+                train_loss_ = 0.0
+                train_acc_ = 0.0
+                train_f1_ = 0.0
 
             train_loss_ += loss
             train_acc_ += acc
@@ -151,9 +157,9 @@ def train(run):
         run.log_metric(name="test-accuracy", value=test_acc, step=counter)
         run.log_metric(name="test-f1", value=test_f1, step=counter)
 
-    logger.info('Saving model')
+    logger.info("Saving model")
     model_location = os.path.join(args.sm_model_dir, "model.joblib")
-    with open(model_location, 'wb') as f:
+    with open(model_location, "wb") as f:
         torch.save(model.state_dict(), f)
 
     logger.info("Stored trained model at {}".format(model_location))
@@ -170,5 +176,4 @@ if __name__ == "__main__":
         run_name=unique_name_from_base(exp_name + "-run"),
         sagemaker_session=session,
     ) as run:
-
         train(run)
