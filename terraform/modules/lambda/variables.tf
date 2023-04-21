@@ -11,17 +11,17 @@ variable "function_name" {
 variable "trigger_bucket_name" {
   type        = string
   description = "Bucket name"
-  default = "null"
+  default     = "null"
 }
 
 variable "trigger_queue_arn" {
   type        = string
   description = "SQS ARN"
-  default = "null"
+  default     = "null"
 }
 
 variable "http_trigger" {
   type        = bool
   description = "Include setup of http trigger"
-  default = false
+  default     = false
 }
