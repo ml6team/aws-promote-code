@@ -14,13 +14,12 @@ from utils import config
 
 
 def eval_model():
-
     dataset = load_dataset("/opt/ml/processing/val", "val")
     dataloader = DataLoader(dataset, shuffle=True, batch_size=10)
     # num_labels = load_num_labels("/opt/ml/processing/labels")
     num_labels = len(config.MEDICAL_CATEGORIES)
 
-    logging.info('Fetching model')
+    logging.info("Fetching model")
     model = get_model(num_labels)
 
     model_path = "/opt/ml/processing/model/model.tar.gz"
@@ -29,7 +28,7 @@ def eval_model():
 
     model.load_state_dict(torch.load("./model/model.joblib"))
 
-    logging.info('Evaluating model')
+    logging.info("Evaluating model")
     device = "cuda" if torch.cuda.is_available() else "cpu"
     logging.info(f"Training on device: {device}")
 
@@ -55,7 +54,7 @@ def eval_model():
         },
     }
 
-    logging.info('Saving evaluation')
+    logging.info("Saving evaluation")
     output_dir = "/opt/ml/processing/evaluation"
     pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
 

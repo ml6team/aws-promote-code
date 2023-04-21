@@ -24,9 +24,9 @@ from sagemaker.workflow.pipeline_context import PipelineSession
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--account', type=str, default="101436505502")
-parser.add_argument('--region', type=str, default="eu-west-3")
-parser.add_argument('--pipeline_name', type=str, default="training-pipeline")
+parser.add_argument("--account", type=str, default="101436505502")
+parser.add_argument("--region", type=str, default="eu-west-3")
+parser.add_argument("--pipeline_name", type=str, default="training-pipeline")
 args = parser.parse_args()
 
 region = boto3.Session(region_name=args.region).region_name
@@ -38,23 +38,27 @@ sagemaker_session = PipelineSession()
 # except ValueError:
 
 iam = boto3.client("iam")
-role = iam.get_role(RoleName=f"{args.account}-sagemaker-exec")['Role']['Arn']
+role = iam.get_role(RoleName=f"{args.account}-sagemaker-exec")["Role"]["Arn"]
 
 default_bucket = sagemaker_session.default_bucket()
-custom_image_uri = f"{args.account}.dkr.ecr.{args.region}.amazonaws.com/training-image:latest"
+custom_image_uri = (
+    f"{args.account}.dkr.ecr.{args.region}.amazonaws.com/training-image:latest"
+)
 
 model_path = f"s3://{default_bucket}/model"
 data_path = f"s3://{default_bucket}/data"
 model_package_group_name = f"{args.pipeline_name}ModelGroup"
-model_package_group_arn = f"arn:aws:sagemaker:{args.region}:{args.account}:" \
+model_package_group_arn = (
+    f"arn:aws:sagemaker:{args.region}:{args.account}:"
     f"model-package/{model_package_group_name}"
+)
 pipeline_name = args.pipeline_name
 
 gpu_instance_type = "ml.g4dn.xlarge"
 pytorch_version = "1.9.0"
 transformers_version = "4.11.0"
 py_version = "py38"
-requirement_dependencies = ['images/train/requirements.txt']
+requirement_dependencies = ["images/train/requirements.txt"]
 
 tune_hyperparameter = False
 
@@ -64,19 +68,10 @@ cache_config = CacheConfig(enable_caching=True, expire_after="30d")
 # Define Pipeline Parameters
 # ======================================================
 
-epoch_count = ParameterInteger(
-    name="epochs",
-    default_value=5
-)
-batch_size = ParameterInteger(
-    name="batch_size",
-    default_value=10
-)
+epoch_count = ParameterInteger(name="epochs", default_value=5)
+batch_size = ParameterInteger(name="batch_size", default_value=10)
 
-learning_rate = ParameterFloat(
-    name="learning_rate",
-    default_value=1e-5
-)
+learning_rate = ParameterFloat(name="learning_rate", default_value=1e-5)
 
 # ======================================================
 # Step 1: Load and preprocess the data
@@ -107,12 +102,9 @@ preprocess_step_args = script_preprocess.run(
         ),
     ],
     outputs=[
-        ProcessingOutput(output_name="train",
-                         source="/opt/ml/processing/output/train"),
-        ProcessingOutput(output_name="test",
-                         source="/opt/ml/processing/output/test"),
-        ProcessingOutput(output_name="val",
-                         source="/opt/ml/processing/output/val"),
+        ProcessingOutput(output_name="train", source="/opt/ml/processing/output/train"),
+        ProcessingOutput(output_name="test", source="/opt/ml/processing/output/test"),
+        ProcessingOutput(output_name="val", source="/opt/ml/processing/output/val"),
     ],
     code="preprocess.py",
     source_dir="src",
@@ -155,12 +147,14 @@ step_train = TrainingStep(
     inputs={
         "train": TrainingInput(
             s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-                "train"].S3Output.S3Uri,
+                "train"
+            ].S3Output.S3Uri,
             content_type="text/csv",
         ),
         "test": TrainingInput(
             s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
-                "test"].S3Output.S3Uri,
+                "test"
+            ].S3Output.S3Uri,
             content_type="text/csv",
         ),
     },
@@ -181,9 +175,7 @@ script_eval = HuggingFaceProcessor(
 )
 
 evaluation_report = PropertyFile(
-    name="EvaluationReport",
-    output_name="evaluation",
-    path="evaluation.json"
+    name="EvaluationReport", output_name="evaluation", path="evaluation.json"
 )
 
 eval_step_args = script_eval.run(
@@ -196,11 +188,13 @@ eval_step_args = script_eval.run(
         ),
         ProcessingInput(
             source=step_train.properties.ModelArtifacts.S3ModelArtifacts,
-            destination="/opt/ml/processing/model",),
+            destination="/opt/ml/processing/model",
+        ),
     ],
     outputs=[
-        ProcessingOutput(output_name="evaluation",
-                         source="/opt/ml/processing/evaluation"),
+        ProcessingOutput(
+            output_name="evaluation", source="/opt/ml/processing/evaluation"
+        ),
     ],
     code="eval.py",
     source_dir="src",
@@ -211,7 +205,6 @@ step_eval = ProcessingStep(
     step_args=eval_step_args,
     property_files=[evaluation_report],
     cache_config=cache_config,
-
 )
 
 # ======================================================
@@ -252,7 +245,7 @@ step_register = ModelStep(
         transform_instances=[gpu_instance_type, "ml.m5.large"],
         model_package_group_name=model_package_group_name,
         model_metrics=model_metrics,
-    )
+    ),
 )
 
 # ======================================================
@@ -290,9 +283,9 @@ cond_gte = ConditionGreaterThanOrEqualTo(
     left=JsonGet(
         step_name=step_eval.name,
         property_file=evaluation_report,
-        json_path="metrics.accuracy.value"
+        json_path="metrics.accuracy.value",
     ),
-    right=0.1
+    right=0.1,
 )
 
 step_cond = ConditionStep(
@@ -319,14 +312,13 @@ pipeline = Pipeline(
         step_register,
         step_eval,
         step_cond,
-
     ],
     sagemaker_session=sagemaker_session,
     pipeline_experiment_config=None,
 )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     json.loads(pipeline.definition())
     pipeline.upsert(role_arn=role)
     execution = pipeline.start()
