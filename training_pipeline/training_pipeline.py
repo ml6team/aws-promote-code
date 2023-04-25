@@ -3,6 +3,7 @@ import boto3
 import json
 import os
 import argparse
+from datetime import datetime
 
 from sagemaker.processing import ScriptProcessor
 from sagemaker.workflow.steps import ProcessingStep, TrainingStep
@@ -19,6 +20,7 @@ from sagemaker.workflow.steps import CacheConfig
 from sagemaker.huggingface import HuggingFaceProcessor, HuggingFace
 from sagemaker.huggingface.model import HuggingFaceModel
 from sagemaker.workflow.model_step import ModelStep
+from sagemaker.workflow.pipeline_experiment_config import PipelineExperimentConfig
 
 from sagemaker.workflow.pipeline_context import PipelineSession
 
@@ -61,13 +63,15 @@ tune_hyperparameter = False
 
 cache_config = CacheConfig(enable_caching=True, expire_after="30d")
 
+trial_name = "trial-run-" + datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
+pipeline_experiment_config = PipelineExperimentConfig(pipeline_name, trial_name)
+
 # ======================================================
 # Define Pipeline Parameters
 # ======================================================
 
 epoch_count = ParameterInteger(name="epochs", default_value=5)
 batch_size = ParameterInteger(name="batch_size", default_value=10)
-
 learning_rate = ParameterFloat(name="learning_rate", default_value=1e-5)
 
 # ======================================================
@@ -311,12 +315,22 @@ pipeline = Pipeline(
         step_cond,
     ],
     sagemaker_session=sagemaker_session,
-    pipeline_experiment_config=None,
+    pipeline_experiment_config=pipeline_experiment_config,
 )
 
 
+def register_pipeline_version(json_data, version_name):
+    s3 = boto3.resource("s3")
+    s3object = s3.Object(
+        default_bucket,
+        f"training_pipeline_registry/training_pipeline_{version_name}.json",
+    )
+
+    s3object.put(Body=(bytes(json.dumps(json_data).encode("UTF-8"))))
+
+
 if __name__ == "__main__":
-    json.loads(pipeline.definition())
+    pipeline_definition_json = json.loads(pipeline.definition())
     pipeline.upsert(role_arn=role)
     execution = pipeline.start()
     execution = execution.wait()
