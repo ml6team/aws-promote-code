@@ -13,8 +13,7 @@ from transformers import get_scheduler
 
 import boto3
 from sagemaker.session import Session
-from sagemaker.experiments.run import Run
-from sagemaker.utils import unique_name_from_base
+from smexperiments.tracker import Tracker
 
 
 from utils.ml_pipeline_components import load_dataset, get_model
@@ -38,8 +37,6 @@ def parse_args():
     # data directories
     parser.add_argument("--train", type=str, default=os.environ.get("SM_CHANNEL_TRAIN"))
     parser.add_argument("--test", type=str, default=os.environ.get("SM_CHANNEL_TEST"))
-    # parser.add_argument('--labels', type=str,
-    #                     default=os.environ.get('SM_CHANNEL_LABELS'))
 
     # model directory
     parser.add_argument(
@@ -65,7 +62,7 @@ def test_model(model, test_dataloader, device):
     return np.mean(acc_list), np.mean(f1_list)
 
 
-def train(run):
+def train(tracker):
     args, _ = parse_args()
 
     log_interval = 100
@@ -94,7 +91,7 @@ def train(run):
         num_training_steps=num_training_steps,
     )
 
-    run.log_parameters(
+    tracker.log_parameters(
         {
             "epoch_count": args.epoch_count,
             "batch_size": args.batch_size,
@@ -129,16 +126,20 @@ def train(run):
 
             # track
             if counter % log_interval == 0:
-                run.log_metric(
-                    name="training-loss", value=train_loss_ / log_interval, step=counter
+                tracker.log_metric(
+                    metric_name="training-loss",
+                    value=train_loss_ / log_interval,
+                    iteration_number=counter,
                 )
-                run.log_metric(
-                    name="training-accuracy",
+                tracker.log_metric(
+                    metric_name="training-accuracy",
                     value=train_acc_ / log_interval,
-                    step=counter,
+                    iteration_number=counter,
                 )
-                run.log_metric(
-                    name="training-f1", value=train_f1_ / log_interval, step=counter
+                tracker.log_metric(
+                    metric_name="training-f1",
+                    value=train_f1_ / log_interval,
+                    iteration_number=counter,
                 )
                 logger.info(f"Training: step {counter}")
 
@@ -154,8 +155,12 @@ def train(run):
         # test model
         test_acc, test_f1 = test_model(model, test_dataloader, device)
         logger.info(f"Test set: Average f1: {test_f1:.4f}")
-        run.log_metric(name="test-accuracy", value=test_acc, step=counter)
-        run.log_metric(name="test-f1", value=test_f1, step=counter)
+        tracker.log_metric(
+            metric_name="test-accuracy", value=test_acc, iteration_number=counter
+        )
+        tracker.log_metric(
+            metric_name="test-f1", value=test_f1, iteration_number=counter
+        )
 
     logger.info("Saving model")
     model_location = os.path.join(args.sm_model_dir, "model.joblib")
@@ -166,14 +171,7 @@ def train(run):
 
 
 if __name__ == "__main__":
-    session = Session(boto3.session.Session(region_name="eu-west-3"))
-    exp_name = "training-pipeline"
+    sagemaker_session = Session(boto3.session.Session(region_name="eu-west-3"))
 
-    # TODO: load run which is automatically create by sagemaker session
-    # instead of create new experiment
-    with Run(
-        experiment_name=exp_name,
-        run_name=unique_name_from_base(exp_name + "-run"),
-        sagemaker_session=session,
-    ) as run:
-        train(run)
+    with Tracker.load() as tracker:
+        tracker = train(tracker)
