@@ -1,0 +1,30 @@
+name: Staging build pipeline
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.7', '3.8', '3.9', '3.10']
+    steps:
+    - uses: actions/checkout@v2
+    # - name: Set up Python ${{ matrix.python-version }}
+    #   uses: actions/setup-python@v2
+    #   with:
+    #     python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: pip install -r training_pipeline/requirements.txt
+    # - name: Test dependencies
+    #   run: pip show sagemaker
+    - name: Build step containers and push to ECR
+      working-directory: ./training_pipeline
+      run: ./images/train/build_and_push.sh
+      shell: bash
+    - name: Build pipeline definition and store in S3
+      working-directory: ./training_pipeline
+      run: python pipeline_registry.py --action push --git-commit-hash ${{ github.sha }}
+    
