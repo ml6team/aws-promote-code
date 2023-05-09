@@ -3,45 +3,38 @@ import json
 import argparse
 
 import boto3
-from sagemaker.workflow.pipeline_context import PipelineSession
 
 import training_pipeline as tp
 
 
 class PipelineRegistry:
-    def __init__(self) -> None:
-        self.sagemaker_session = PipelineSession()
-        self.bucket_name = self.sagemaker_session.default_bucket()
-        self.pipeline_name = "TestPipe1"
+    bucket_name = "pipeline-registry-bucket"
 
-        self.REGISTRY_FOLDER_NAME = "training_pipeline_registry"
-        self.sagemaker_client = boto3.client("sagemaker")
+    def __init__(self, account: str, pipeline_name: str) -> None:
+        self.pipeline_name = pipeline_name
 
-        iam = boto3.client("iam")
-        self.sagemaker_role = iam.get_role(RoleName=f"{args.account}-sagemaker-exec")[
+        self.session = boto3.Session(profile_name=account)
+        self.sagemaker_client = self.session.client("sagemaker")
+
+        iam = self.session.client("iam")
+        self.sagemaker_role = iam.get_role(RoleName=f"{account}-sagemaker-exec")[
             "Role"
         ]["Arn"]
 
-    def get_file_path(self, version_name):
-        return f"{self.REGISTRY_FOLDER_NAME}/training_pipeline_{version_name}.json"
+    def get_file_path(self, version_name: str) -> None:
+        """Return file path, with specific folder for each pipeline"""
+        return f"{self.pipeline_name}/pipeline_definition_{version_name}.json"
 
-    def register_version(self, json_data, version_name):
-        # TODO: add git commits and environment tags to version pipeline
+    def register_version(self, json_data: dict, version_name: str) -> None:
         file_name = self.get_file_path(version_name)
 
-        s3 = boto3.resource("s3")
+        s3 = self.session.resource("s3")
         s3object = s3.Object(self.bucket_name, file_name)
 
         s3object.put(Body=(bytes(json.dumps(json_data).encode("UTF-8"))))
         print(f"Saved file '{file_name}' in bucket '{self.bucket_name}'")
 
-    def load_version(self, version_name):
-        s3 = boto3.resource("s3")
-        file_name = self.get_file_path(version_name)
-        s3object = s3.Object(self.bucket_name, file_name)
-        return json.loads(s3object.get()["Body"].read())
-
-    def create_pipeline(self, version_name):
+    def create_pipeline(self, version_name: str) -> None:
         """Create pipeline directly from S3 location"""
         response = self.sagemaker_client.create_pipeline(
             PipelineName=self.pipeline_name,
@@ -53,7 +46,7 @@ class PipelineRegistry:
         )
         print(response)
 
-    def update_pipeline(self, version_name):
+    def update_pipeline(self, version_name: str) -> None:
         """Updates pipeline by first deleting old pipeline and then creating new one"""
         self.sagemaker_client.delete_pipeline(
             PipelineName=self.pipeline_name,
@@ -61,10 +54,11 @@ class PipelineRegistry:
         )
         self.create_pipeline(version_name)
 
-    def start_pipeline(
-        self,
-    ):
-        self.sagemaker_client.start_pipeline_execution(PipelineName=self.pipeline_name)
+
+def start_pipeline(account: str, pipeline_name: str) -> None:
+    session = boto3.Session(profile_name=account)
+    sagemaker_client = session.client("sagemaker")
+    sagemaker_client.start_pipeline_execution(PipelineName=pipeline_name)
 
 
 if __name__ == "__main__":
@@ -86,7 +80,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    pipeline_registry = PipelineRegistry()
+    pipeline_registry = PipelineRegistry(
+        account=args.account, pipeline_name=args.pipeline_name
+    )
 
     if args.action == "register_version":
         pipeline = tp.get_pipeline(args.pipeline_name, args.account, args.region)

@@ -25,10 +25,10 @@ from sagemaker.workflow.pipeline_context import PipelineSession
 
 
 def get_pipeline(pipeline_name, account, region):
-    region = boto3.Session(region_name=region).region_name
-    sagemaker_session = PipelineSession()
+    session = boto3.Session(profile_name=account)
+    sagemaker_session = PipelineSession(boto_session=session)
 
-    iam = boto3.client("iam")
+    iam = session.client("iam")
     role = iam.get_role(RoleName=f"{account}-sagemaker-exec")["Role"]["Arn"]
 
     default_bucket = sagemaker_session.default_bucket()
