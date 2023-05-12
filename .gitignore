@@ -160,7 +160,8 @@ cython_debug/
 .idea/
 
 # Terraform
-terraform/main/.terraform/
+.terraform*
+terraform.tfstate.backup
 
 # Sagemaker generated repack files
 *_repack*
