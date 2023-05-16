@@ -5,7 +5,7 @@
 provider "aws" {
   # region = var.region
   shared_config_files = ["~/.aws/config"]
-  profile = "operations"
+  profile             = "operations"
 }
 
 /******************************************

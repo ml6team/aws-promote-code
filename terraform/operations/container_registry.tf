@@ -14,9 +14,9 @@ data "aws_iam_policy_document" "allow_access_to_lambda_ecr" {
     principals {
       type = "AWS"
       identifiers = [
-        "arn:aws:iam::${var.dev_account_id}:root", # dev
+        "arn:aws:iam::${var.dev_account_id}:root",     # dev
         "arn:aws:iam::${var.staging_account_id}:root", # staging
-        "arn:aws:iam::${var.prod_account_id}:root", # prod
+        "arn:aws:iam::${var.prod_account_id}:root",    # prod
       ]
     }
 
@@ -59,9 +59,9 @@ data "aws_iam_policy_document" "allow_access_to_training_ecr" {
     principals {
       type = "AWS"
       identifiers = [
-        "arn:aws:iam::${var.dev_account_id}:root", # dev
+        "arn:aws:iam::${var.dev_account_id}:root",     # dev
         "arn:aws:iam::${var.staging_account_id}:root", # staging
-        "arn:aws:iam::${var.prod_account_id}:root", # prod
+        "arn:aws:iam::${var.prod_account_id}:root",    # prod
       ]
     }
 

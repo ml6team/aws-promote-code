@@ -4,7 +4,7 @@
 
 provider "aws" {
   shared_config_files = ["~/.aws/config"]
-  profile             = "${var.profile}"
+  profile             = var.profile
 }
 
 /******************************************
