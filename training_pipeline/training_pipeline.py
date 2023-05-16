@@ -23,22 +23,32 @@ from sagemaker.workflow.model_step import ModelStep
 from sagemaker.workflow.pipeline_experiment_config import PipelineExperimentConfig
 from sagemaker.workflow.pipeline_context import PipelineSession
 
+from aws_profiles import UserProfiles
 
-def get_pipeline(pipeline_name, account, region):
-    session = boto3.Session(profile_name=account)
+
+def get_pipeline(
+    pipeline_name: str, account_id: str, profile_name: str, region: str
+) -> Pipeline:
+    session = boto3.Session(profile_name=profile_name)
     sagemaker_session = PipelineSession(boto_session=session)
 
     iam = session.client("iam")
-    role = iam.get_role(RoleName=f"{account}-sagemaker-exec")["Role"]["Arn"]
+    role = iam.get_role(RoleName=f"{account_id}-sagemaker-exec")["Role"]["Arn"]
 
     default_bucket = sagemaker_session.default_bucket()
-    custom_image_uri = f"{account}.dkr.ecr.{region}.amazonaws.com/training-image:latest"
+
+    # Docker images are located in ECR in 'operations' account
+    userProfiles = UserProfiles()
+    operations_id = userProfiles.get_profile_id("operations")
+    custom_image_uri = (
+        f"{operations_id}.dkr.ecr.{region}.amazonaws.com/training-image:latest"
+    )
 
     model_path = f"s3://{default_bucket}/model"
     data_path = f"s3://{default_bucket}/data"
     model_package_group_name = f"{pipeline_name}ModelGroup"
     model_package_group_arn = (
-        f"arn:aws:sagemaker:{region}:{account}:"
+        f"arn:aws:sagemaker:{region}:{account_id}:"
         f"model-package/{model_package_group_name}"
     )
 
@@ -309,19 +319,35 @@ def get_pipeline(pipeline_name, account, region):
     return pipeline
 
 
+def start_pipeline(profile_name: str, pipeline_name: str) -> None:
+    session = boto3.Session(profile_name=profile_name)
+    sagemaker_client = session.client("sagemaker")
+    sagemaker_client.start_pipeline_execution(PipelineName=pipeline_name)
+
+
 if __name__ == "__main__":
+    # manually create and start pipeline
+    userProfiles = UserProfiles()
+    profiles = userProfiles.list_profiles()
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("--account", type=str, default="101436505502")
+    parser.add_argument("--profile", type=str, default="default", choices=profiles)
     parser.add_argument("--region", type=str, default="eu-west-3")
     parser.add_argument("--pipeline-name", type=str, default="training-pipeline")
     args = parser.parse_args()
 
-    pipeline = get_pipeline(args.pipeline_name, args.account, args.region)
+    pipeline = get_pipeline(
+        pipeline_name=args.pipeline_name,
+        profile_name=args.profile,
+        account_id=userProfiles.get_profile_id(args.profile),
+        region=args.region,
+    )
     pipeline_definition_json = json.loads(pipeline.definition())
 
-    # run pipeline
-    iam = boto3.client("iam")
-    role = iam.get_role(RoleName=f"{args.account}-sagemaker-exec")["Role"]["Arn"]
+    session = boto3.Session(profile_name=args.profile)
+    account_id = userProfiles.get_profile_id(args.profile)
+    iam = session.client("iam")
+    role = iam.get_role(RoleName=f"{account_id}-sagemaker-exec")["Role"]["Arn"]
     pipeline.upsert(role_arn=role)
     execution = pipeline.start()
     execution = execution.wait()

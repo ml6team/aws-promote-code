@@ -3,8 +3,9 @@
  *****************************************/
 
 provider "aws" {
+  # region = var.region
   shared_config_files = ["~/.aws/config"]
-  profile             = "${var.profile}"
+  profile = "operations"
 }
 
 /******************************************
@@ -26,8 +27,18 @@ variable "region" {
   type        = string
 }
 
-variable "scheduled_pipeline_run" {
-  description = "Enables scheduled run of SageMaker Pipeline"
+variable "dev_account_id" {
+  description = "The account ID of the 'dev' account"
+  type        = string
+}
+
+variable "staging_account_id" {
+  description = "The account ID of the 'staging' account"
+  type        = string
+}
+
+variable "prod_account_id" {
+  description = "The account ID of the 'prod' account"
   type        = string
 }
 
@@ -35,6 +46,6 @@ variable "scheduled_pipeline_run" {
   VPC configuration
  *****************************************/
 
-module "vpc-network" {
-  source = "../modules/vpc"
-}
+# module "vpc-network" {
+#   source = "../modules/vpc"
+# }
