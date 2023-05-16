@@ -23,7 +23,7 @@ variable "region" {
 
 provider "aws" {
   shared_config_files = ["~/.aws/config"]
-  profile = "operations"
+  profile             = "operations"
 }
 
 /******************************************
