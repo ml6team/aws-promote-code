@@ -26,11 +26,12 @@ from sagemaker.workflow.pipeline_context import PipelineSession
 from aws_profiles import UserProfiles
 
 
-def get_pipeline(
-    pipeline_name: str, account_id: str, profile_name: str, region: str
-) -> Pipeline:
-    session = boto3.Session(profile_name=profile_name)
+def get_pipeline(pipeline_name: str, profile_name: str, region: str) -> Pipeline:
+    session = (
+        boto3.Session(profile_name=profile_name) if profile_name else boto3.Session()
+    )
     sagemaker_session = PipelineSession(boto_session=session)
+    account_id = session.client("sts").get_caller_identity().get("Account")
 
     iam = session.client("iam")
     role = iam.get_role(RoleName=f"{account_id}-sagemaker-exec")["Role"]["Arn"]
@@ -38,8 +39,7 @@ def get_pipeline(
     default_bucket = sagemaker_session.default_bucket()
 
     # Docker images are located in ECR in 'operations' account
-    userProfiles = UserProfiles()
-    operations_id = userProfiles.get_profile_id("operations")
+    operations_id = UserProfiles().get_profile_id("operations")
     custom_image_uri = (
         f"{operations_id}.dkr.ecr.{region}.amazonaws.com/training-image:latest"
     )
@@ -319,8 +319,10 @@ def get_pipeline(
     return pipeline
 
 
-def start_pipeline(profile_name: str, pipeline_name: str) -> None:
-    session = boto3.Session(profile_name=profile_name)
+def start_pipeline(pipeline_name: str, profile_name: str = None) -> None:
+    session = (
+        boto3.Session(profile_name=profile_name) if profile_name else boto3.Session()
+    )
     sagemaker_client = session.client("sagemaker")
     sagemaker_client.start_pipeline_execution(PipelineName=pipeline_name)
 
