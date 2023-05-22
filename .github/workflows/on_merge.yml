@@ -26,11 +26,14 @@ jobs:
         with:
           aws-region: eu-west-3
           role-to-assume: arn:aws:iam::123971416876:role/123971416876-github-full-access
-
       - name: Build step containers and push to ECR
         working-directory: ./training_pipeline
-        run: ./images/build_and_push_all.sh
-        shell: bash
+        run: |
+         chmod +x ./images/build_and_push_all.sh
+         ./images/build_and_push_all.sh
+
+
+        # share data between runs: https://docs.github.com/en/actions/learn-github-actions/essential-features-of-github-actions
     # - name: Build pipeline definition and store in S3
     #   working-directory: ./training_pipeline
     #   run: python pipeline_registry.py --profile dev --registry-profile operations --action register --git-commit-hash ${{ github.sha }}
