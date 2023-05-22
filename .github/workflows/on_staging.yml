@@ -1,11 +1,15 @@
 name: Staging build pipeline
+# on:
+#   label:
+#     types: [staging]
+#   pull_request:
 on:
   push:
     branches:
       - dev
   pull_request:
 jobs:
-  build-staging:
+  deploy-staging:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -20,18 +24,6 @@ jobs:
       - name: Install dependencies
         run: pip install -r ./training_pipeline/requirements.txt
 
-      - name: Configure AWS Credentials to [operations] account
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-region: eu-west-3
-          role-to-assume: arn:aws:iam::123971416876:role/123971416876-github-full-access
-
-      - name: Build Docker containers and push to ECR
-        working-directory: ./training_pipeline
-        run: |
-          chmod +x ./images/build_and_push_all.sh 
-          ./images/build_and_push_all.sh
-
       # TODO: [dev] placeholder --> switch to staging
       - name: Configure AWS Credentials to [dev] account
         uses: aws-actions/configure-aws-credentials@v2
@@ -39,7 +31,17 @@ jobs:
           aws-region: eu-west-3
           role-to-assume: arn:aws:iam::157261447749:role/157261447749-github-full-access
 
-        # share data between runs: https://docs.github.com/en/actions/learn-github-actions/essential-features-of-github-actions
-      - name: Build pipeline definition and store in S3
+      - name: Build all resources with terraform
+        working-directory: ./training_pipeline/terraform/main
+        run: |
+          terraform workspace select dev
+          terraform init
+          terraform apply -auto-approve --var-file ../environment/dev.tfvars
+
+      - name: Upload training data to S3
         working-directory: ./training_pipeline
-        run: python pipeline_registry.py --action register --git-commit-hash ${{ github.sha }}
+        run: python upload_datatset.py
+
+      - name: Load pipeline definition and deploy
+        working-directory: ./training_pipeline
+        run: python pipeline_registry.py --action deploy --git-commit-hash ${{ github.sha }}
