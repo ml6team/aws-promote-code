@@ -16,24 +16,33 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: 3.7
+
       - name: Display Python version
         run: python -c "import sys; print('py-version:'+sys.version)"
+
       - name: Install dependencies
         run: pip install -r ./training_pipeline/requirements.txt
 
-      - name: Configure AWS Credentials
+      - name: Configure AWS Credentials to [operations] account
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-region: eu-west-3
           role-to-assume: arn:aws:iam::123971416876:role/123971416876-github-full-access
-      - name: Build step containers and push to ECR
+
+      - name: Build Docker containers and push to ECR
         working-directory: ./training_pipeline
         run: |
-         chmod +x ./images/build_and_push_all.sh
-         ./images/build_and_push_all.sh
+          chmod +x ./images/build_and_push_all.sh 
+          ./images/build_and_push_all.sh
 
+      # TODO: placeholder --> switch to staging
+      - name: Configure AWS Credentials to [dev] account
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: eu-west-3
+          role-to-assume: arn:aws:iam::157261447749:role/157261447749-github-full-access
 
         # share data between runs: https://docs.github.com/en/actions/learn-github-actions/essential-features-of-github-actions
-    # - name: Build pipeline definition and store in S3
-    #   working-directory: ./training_pipeline
-    #   run: python pipeline_registry.py --profile dev --registry-profile operations --action register --git-commit-hash ${{ github.sha }}
+      - name: Build pipeline definition and store in S3
+        working-directory: ./training_pipeline
+        run: python pipeline_registry.py --action register --git-commit-hash ${{ github.sha }}
