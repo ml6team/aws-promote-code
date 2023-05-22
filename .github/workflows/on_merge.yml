@@ -1,0 +1,36 @@
+name: Staging build pipeline
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+jobs:
+  build-staging:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.7
+      - name: Display Python version
+        run: python -c "import sys; print('py-version:'+sys.version)"
+      - name: Install dependencies
+        run: pip install -r ./training_pipeline/requirements.txt
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: eu-west-3
+          role-to-assume: arn:aws:iam::123971416876:role/123971416876-github-full-access
+
+      - name: Build step containers and push to ECR
+        working-directory: ./training_pipeline
+        run: ./images/build_and_push_all.sh
+        shell: bash
+    # - name: Build pipeline definition and store in S3
+    #   working-directory: ./training_pipeline
+    #   run: python pipeline_registry.py --profile dev --registry-profile operations --action register --git-commit-hash ${{ github.sha }}
