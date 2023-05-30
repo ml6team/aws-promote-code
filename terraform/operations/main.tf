@@ -2,10 +2,29 @@
   AWS provider configuration
  *****************************************/
 
-provider "aws" {
-  # region = var.region
+provider "aws" { # default profile/alias
   shared_config_files = ["~/.aws/config"]
   profile             = "operations"
+}
+
+# access to other accounts
+
+provider "aws" {
+  alias               = "dev"
+  shared_config_files = ["~/.aws/config"]
+  profile             = "dev"
+}
+
+provider "aws" {
+  alias               = "staging"
+  shared_config_files = ["~/.aws/config"]
+  profile             = "staging"
+}
+
+provider "aws" {
+  alias               = "prod"
+  shared_config_files = ["~/.aws/config"]
+  profile             = "prod"
 }
 
 /******************************************
@@ -43,9 +62,36 @@ variable "prod_account_id" {
 }
 
 /******************************************
-  VPC configuration
+  OpenID Connect Provider (provides GitHub actions access)
  *****************************************/
 
-# module "vpc-network" {
-#   source = "../modules/vpc"
-# }
+
+module "openid_github_iam_operations" {
+  source  = "../modules/openid_github_provider"
+  account = var.account
+}
+
+
+module "openid_github_iam_dev" {
+  source  = "../modules/openid_github_provider"
+  account = var.dev_account_id
+  providers = {
+    aws = aws.dev
+  }
+}
+
+module "openid_github_iam_staging" {
+  source  = "../modules/openid_github_provider"
+  account = var.staging_account_id
+  providers = {
+    aws = aws.staging
+  }
+}
+
+module "openid_github_iam_prod" {
+  source  = "../modules/openid_github_provider"
+  account = var.prod_account_id
+  providers = {
+    aws = aws.prod
+  }
+}

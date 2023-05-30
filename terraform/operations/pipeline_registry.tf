@@ -3,7 +3,7 @@
  *****************************************/
 
 resource "aws_s3_bucket" "pipeline_registry" {
-  bucket = "${var.account}-pipeline-registry-bucket" # TODO: give unique name
+  bucket = "${var.account}-pipeline-registry-bucket"
 }
 
 /******************************************
