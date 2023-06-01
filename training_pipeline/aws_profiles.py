@@ -1,11 +1,13 @@
 """A class for reading and listing AWS profiles from a user profile file."""
-import json
 
 
 class UserProfiles:
-    def __init__(self, path="profiles.json") -> None:
+    def __init__(self, path="profiles.conf") -> None:
+        self.profiles = {}
         with open(path, "r") as file:
-            self.profiles = json.load(file)
+            for line in file:
+                key, value = line.strip().split("=")
+                self.profiles[key.strip()] = int(value.strip())
 
     def list_profiles(self):
         return self.profiles.keys()

@@ -26,18 +26,9 @@ def upload_df(df, file_name, bucket_name, profile_name=None):
     s3_resource.Object(bucket_name, f"data/{file_name}").put(Body=csv_buffer.getvalue())
 
 
-if __name__ == "__main__":
-    userProfiles = UserProfiles()
-    profiles = userProfiles.list_profiles()
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--profile", type=str, default=None, choices=profiles)
-    parser.add_argument("--region", type=str, default="eu-west-3")
-    parser.add_argument("--bucket-name", type=str, default="sagemaker_default")
-    args = parser.parse_args()
-
+def split_and_upload(profile: str, bucket_name: str, csv_path: str):
     # load local dataset
-    df = pd.read_csv("data/mtsamples.csv")
+    df = pd.read_csv(csv_path)
 
     # drop empty rows
     df = df[df["transcription"].notna()]
@@ -54,6 +45,20 @@ if __name__ == "__main__":
     val.reset_index(drop=True, inplace=True)
 
     # save data to S3
-    upload_df(train, "train.csv", args.bucket_name, args.profile)
-    upload_df(test, "test.csv", args.bucket_name, args.profile)
-    upload_df(val, "val.csv", args.bucket_name, args.profile)
+    upload_df(train, "train.csv", bucket_name, profile)
+    upload_df(test, "test.csv", bucket_name, profile)
+    upload_df(val, "val.csv", bucket_name, profile)
+
+
+if __name__ == "__main__":
+    userProfiles = UserProfiles()
+    profiles = userProfiles.list_profiles()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--profile", type=str, default=None, choices=profiles)
+    parser.add_argument("--bucket-name", type=str, default="sagemaker_default")
+    parser.add_argument("--csv-path", type=str, default="data/mtsamples.csv")
+
+    args = parser.parse_args()
+
+    split_and_upload(args.profile, args.bucket_name, args.csv_path)

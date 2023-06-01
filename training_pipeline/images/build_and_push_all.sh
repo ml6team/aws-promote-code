@@ -1,6 +1,9 @@
 # Login to AWS docker registry
-# aws ecr get-login-password --region eu-west-3 | docker login --username AWS --password-stdin 763104351884.dkr.ecr.eu-west-3.amazonaws.com
-echo "Account-Id: 123971416876"
+
+# read profile-id from config-file
+config_file="profiles.conf"
+source "$config_file"
+echo "Profile-Id: $operations"
 echo "Profile-Name: operations"
 
 # ======================================================
@@ -12,14 +15,11 @@ docker build -t lambda-image -f images/lambda/Dockerfile .
 # For running image locally: docker run --rm -ti --platform linux/amd64 training-image
 
 # Login to docker registry
-aws ecr get-login-password --region eu-west-3 | docker login --username AWS --password-stdin 123971416876.dkr.ecr.eu-west-3.amazonaws.com 
-
-# # Create Amazon Elastic Container Registry Repository
-# aws ecr create-repository --region eu-west-3 --repository-name lambda-image --image-scanning-configuration scanOnPush=true --image-tag-mutability MUTABLE 
+aws ecr get-login-password --region eu-west-3 | docker login --username AWS --password-stdin $operations.dkr.ecr.eu-west-3.amazonaws.com 
 
 # Tag and Push Docker Image to Container Registry
-docker tag lambda-image:latest 123971416876.dkr.ecr.eu-west-3.amazonaws.com/lambda-image:latest
-docker push 123971416876.dkr.ecr.eu-west-3.amazonaws.com/lambda-image:latest
+docker tag lambda-image:latest $operations.dkr.ecr.eu-west-3.amazonaws.com/lambda-image:latest
+docker push $operations.dkr.ecr.eu-west-3.amazonaws.com/lambda-image:latest
 
 
 # # ======================================================
@@ -34,11 +34,8 @@ docker build -t training-image -f images/train/Dockerfile .
 # For running image locally: docker run --rm -ti --platform linux/amd64 training-image
 
 # Login to docker registry
-aws ecr get-login-password --region eu-west-3 | docker login --username AWS --password-stdin 123971416876.dkr.ecr.eu-west-3.amazonaws.com
-
-# Create Amazon Elastic Container Registry Repository
-# aws ecr create-repository --region eu-west-3 --repository-name training-image --image-scanning-configuration scanOnPush=true --image-tag-mutability MUTABLE
+aws ecr get-login-password --region eu-west-3 | docker login --username AWS --password-stdin $operations.dkr.ecr.eu-west-3.amazonaws.com
 
 # Tag and Push Docker Image to Container Registry
-docker tag training-image:latest 123971416876.dkr.ecr.eu-west-3.amazonaws.com/training-image:latest
-docker push 123971416876.dkr.ecr.eu-west-3.amazonaws.com/training-image:latest
+docker tag training-image:latest $operations.dkr.ecr.eu-west-3.amazonaws.com/training-image:latest
+docker push $operations.dkr.ecr.eu-west-3.amazonaws.com/training-image:latest

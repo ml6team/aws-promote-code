@@ -4,6 +4,10 @@
 
 resource "aws_ecr_repository" "lambda_ecr" {
   name = "lambda-image"
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+  image_tag_mutability = "MUTABLE"
 }
 
 data "aws_iam_policy_document" "allow_access_to_lambda_ecr" {
