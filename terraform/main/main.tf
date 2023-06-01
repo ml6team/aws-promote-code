@@ -38,12 +38,3 @@ variable "scheduled_pipeline_run" {
 module "vpc-network" {
   source = "../modules/vpc"
 }
-
-/******************************************
-  OpenID Connect Provider (provides GitHub actions access)
- *****************************************/
-
-module "openid-github-provider" {
-  source  = "../modules/openid_github_provider"
-  account = var.account
-}

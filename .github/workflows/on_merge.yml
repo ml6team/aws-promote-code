@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r ./training_pipeline/requirements.txt
 
-      - name: Configure AWS Credentials to [operations] account
+      - name: Login to [operations] account
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-region: eu-west-3
@@ -29,13 +29,3 @@ jobs:
       - name: Build Docker containers and push to ECR
         working-directory: ./training_pipeline
         run: ./images/build_and_push_all.sh
-
-      - name: Configure AWS Credentials to [staging] account
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-region: eu-west-3
-          role-to-assume: arn:aws:iam::381667332649:role/381667332649-github-full-access
-
-      - name: Build pipeline definition and store in S3
-        working-directory: ./training_pipeline
-        run: python pipeline_registry.py --action register --git-commit-hash ${{ github.sha }}

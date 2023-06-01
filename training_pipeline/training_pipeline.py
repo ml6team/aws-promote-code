@@ -1,4 +1,4 @@
-"""Defines Sagemaker Training Pipeline"""
+"""Creates and runs Sagemaker Training Pipeline"""
 import json
 import os
 import argparse
@@ -16,7 +16,6 @@ from sagemaker.workflow.condition_step import ConditionStep
 from sagemaker.workflow.functions import JsonGet
 from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.inputs import TrainingInput
-from sagemaker.workflow.steps import CacheConfig
 from sagemaker.huggingface import HuggingFaceProcessor, HuggingFace
 from sagemaker.huggingface.model import HuggingFaceModel
 from sagemaker.workflow.model_step import ModelStep
@@ -58,7 +57,7 @@ def get_pipeline(pipeline_name: str, profile_name: str, region: str) -> Pipeline
     py_version = "py38"
     requirement_dependencies = ["images/train/requirements.txt"]
 
-    cache_config = CacheConfig(enable_caching=True, expire_after="30d")
+    cache_config = None  # CacheConfig(enable_caching=True, expire_after="30d")
 
     trial_name = "trial-run-" + datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
     pipeline_experiment_config = PipelineExperimentConfig(pipeline_name, trial_name)
@@ -319,7 +318,26 @@ def get_pipeline(pipeline_name: str, profile_name: str, region: str) -> Pipeline
     return pipeline
 
 
-def start_pipeline(pipeline_name: str, profile_name: str = None) -> None:
+def create_pipeline(pipeline_name, profile, region):
+    """Create/update pipeline"""
+    pipeline = get_pipeline(
+        pipeline_name=pipeline_name,
+        profile_name=profile,
+        region=region,
+    )
+    json.loads(pipeline.definition())
+
+    session = boto3.Session(profile_name=profile) if profile else boto3.Session()
+    account_id = userProfiles.get_profile_id(profile)
+    iam = session.client("iam")
+    role = iam.get_role(RoleName=f"{account_id}-sagemaker-exec")["Role"]["Arn"]
+    pipeline.upsert(role_arn=role)
+
+    # execution = pipeline.start()
+    # execution = execution.wait()
+
+
+def run_pipeline(pipeline_name: str, profile_name: str = None) -> None:
     session = (
         boto3.Session(profile_name=profile_name) if profile_name else boto3.Session()
     )
@@ -328,28 +346,18 @@ def start_pipeline(pipeline_name: str, profile_name: str = None) -> None:
 
 
 if __name__ == "__main__":
-    # manually create and start pipeline
     userProfiles = UserProfiles()
     profiles = userProfiles.list_profiles()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--profile", type=str, default="default", choices=profiles)
+    parser.add_argument("--profile", type=str, default=None, choices=profiles)
     parser.add_argument("--region", type=str, default="eu-west-3")
     parser.add_argument("--pipeline-name", type=str, default="training-pipeline")
+    parser.add_argument("--action", type=str, choices=["create", "run"])
     args = parser.parse_args()
 
-    pipeline = get_pipeline(
-        pipeline_name=args.pipeline_name,
-        profile_name=args.profile,
-        account_id=userProfiles.get_profile_id(args.profile),
-        region=args.region,
-    )
-    pipeline_definition_json = json.loads(pipeline.definition())
+    if args.action == "create":
+        create_pipeline(args.pipeline_name, args.profile, args.region)
 
-    session = boto3.Session(profile_name=args.profile)
-    account_id = userProfiles.get_profile_id(args.profile)
-    iam = session.client("iam")
-    role = iam.get_role(RoleName=f"{account_id}-sagemaker-exec")["Role"]["Arn"]
-    pipeline.upsert(role_arn=role)
-    execution = pipeline.start()
-    execution = execution.wait()
+    elif args.action == "run":
+        run_pipeline(args.pipeline_name, args.profile)

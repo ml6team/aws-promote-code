@@ -43,5 +43,4 @@ jobs:
 
       - name: Deploy pipeline from registry in [staging]
         working-directory: ./training_pipeline
-        run: python pipeline_registry.py --action deploy --git-commit-hash 2cd86d0304ab5a107e92a494cb1a909965f03f16
-        #${{ github.sha }}
+        run: python training_pipeline.py -- action create

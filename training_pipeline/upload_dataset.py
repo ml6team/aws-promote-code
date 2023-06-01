@@ -10,9 +10,11 @@ import sagemaker
 from aws_profiles import UserProfiles
 
 
-def upload_df(df, profile_name, file_name, bucket_name):
+def upload_df(df, file_name, bucket_name, profile_name=None):
     """Uploads Pandas Dataframe as csv to Sagemaker bucket"""
-    session = boto3.Session(profile_name=profile_name)
+    session = (
+        boto3.Session(profile_name=profile_name) if profile_name else boto3.Session()
+    )
 
     if bucket_name == "sagemaker_default":
         sagemaker_session = sagemaker.Session(boto_session=session)
@@ -29,7 +31,7 @@ if __name__ == "__main__":
     profiles = userProfiles.list_profiles()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--profile", type=str, default="default", choices=profiles)
+    parser.add_argument("--profile", type=str, default=None, choices=profiles)
     parser.add_argument("--region", type=str, default="eu-west-3")
     parser.add_argument("--bucket-name", type=str, default="sagemaker_default")
     args = parser.parse_args()
@@ -52,6 +54,6 @@ if __name__ == "__main__":
     val.reset_index(drop=True, inplace=True)
 
     # save data to S3
-    upload_df(train, args.profile, "train.csv", args.bucket_name)
-    upload_df(test, args.profile, "test.csv", args.bucket_name)
-    upload_df(val, args.profile, "val.csv", args.bucket_name)
+    upload_df(train, "train.csv", args.bucket_name, args.profile)
+    upload_df(test, "test.csv", args.bucket_name, args.profile)
+    upload_df(val, "val.csv", args.bucket_name, args.profile)
