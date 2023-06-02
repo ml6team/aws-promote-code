@@ -3,7 +3,8 @@
  *****************************************/
 
 provider "aws" {
-  region = var.region
+  shared_config_files = ["~/.aws/config"]
+  profile             = var.profile
 }
 
 /******************************************
@@ -11,12 +12,22 @@ provider "aws" {
  *****************************************/
 
 variable "account" {
-  description = "AWS account name"
+  description = "AWS account id"
+  type        = string
+}
+
+variable "profile" {
+  description = "AWS account profile name"
   type        = string
 }
 
 variable "region" {
   description = "Default AWS region for resources"
+  type        = string
+}
+
+variable "scheduled_pipeline_run" {
+  description = "Enables scheduled run of SageMaker Pipeline"
   type        = string
 }
 

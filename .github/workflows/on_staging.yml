@@ -1,0 +1,46 @@
+name: Staging deploy pipeline
+# on:
+#   label:
+#     types: [staging]
+#   pull_request:
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.7
+
+      - name: Install dependencies
+        run: pip install -r ./training_pipeline/requirements.txt
+
+      - name: Login to [staging] account
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: eu-west-3
+          role-to-assume: arn:aws:iam::381667332649:role/381667332649-github-full-access
+
+      - name: Build all resources in [staging] with terraform
+        working-directory: ./training_pipeline/terraform/main
+        run: |
+          terraform init
+          terraform workspace select staging
+          terraform apply -auto-approve --var-file environment/staging.tfvars
+
+      - name: Upload training data to S3
+        working-directory: ./training_pipeline
+        run: python upload_datatset.py
+
+      - name: Deploy pipeline from registry in [staging]
+        working-directory: ./training_pipeline
+        run: python training_pipeline.py -- action create
