@@ -10,7 +10,11 @@ data "aws_iam_policy_document" "sagemaker_policy" {
       "iam:PassRole",
       "events:PutTargets",
       "events:PutRule",
-      "events:DescribeRule"
+      "events:DescribeRule",
+      # for deploy
+      "sagemaker:ListModelPackages",
+      "sagemaker:DescribeModelPackage",
+      "sagemaker:DescribeEndpoint",
     ]
 
     effect = "Allow"
