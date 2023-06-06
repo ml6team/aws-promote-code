@@ -22,19 +22,21 @@ def get_latest_model(
         ModelPackageGroupName=model_package_group_name
     )["ModelPackageSummaryList"]
 
+    approved_str = ""
     if is_approved:
         model_package_arns = [
             d for d in model_package_arns if d["ModelApprovalStatus"] == "Approved"
         ]
+        approved_str = " approved"
 
     if len(model_package_arns) != 0:
         model_package_arn = model_package_arns[0]["ModelPackageArn"]
-        print(f"The latest approved model-arn is: {model_package_arn}")
+        print(f"The latest{approved_str} model-arn is: {model_package_arn}")
         return model_package_arn
 
     else:
         print(
-            f"There is no approved model in the model-group '{model_package_group_name}'"
+            f"There is no{approved_str} model in the model-group '{model_package_group_name}'"
         )
 
 
@@ -42,7 +44,6 @@ def deploy(
     role_arn: str, model_package_arn: str, account: str, session: Session
 ) -> None:
     """Deploys or updates model endpoint"""
-    # print(f"Deploy model: {model_package_arn}")
     endpoint_name = f"{account}-endpoint"
 
     sagemaker_session = sagemaker.session.Session(boto_session=session)
@@ -91,37 +92,29 @@ def lambda_func(event, context):
     before deploying endpoint
     """
     # extract relevant info from event-json
-    account = event["account"]
+    account_id = event["account"]
     region = event["region"]
     model_package_name = event["detail"]["ModelPackageGroupName"]
     model_version = event["detail"]["ModelPackageVersion"]
     status = event["detail"]["ModelApprovalStatus"]
 
     model_package_arn = (
-        f"arn:aws:sagemaker:{region}:{account}:"
+        f"arn:aws:sagemaker:{region}:{account_id}:"
         f"model-package/{model_package_name}/{str(model_version)}"
     )
     session = boto3.Session()
-    if (
-        model_package_arn.lower()
-        != get_latest_model(model_package_name, session).lower()
-    ):
-        print(
-            f"Lambda triggered by model: '{model_package_arn}', which is not the latest model"
-        )
-        return {"statusCode": 200, "body": json.dumps("Model NOT deployed")}
-
     if status != "Approved":
         print(
             f"Lambda triggered by model: '{model_package_arn}', but model was not approved"
         )
         return {"statusCode": 200, "body": json.dumps("Model NOT deployed")}
 
-    role_arn = f"arn:aws:iam::{account}:role/{account}-iam-for-lambda"
+    role_arn = f"arn:aws:iam::{account_id}:role/{account_id}-sagemaker-exec"
+
     deploy(
         role_arn=role_arn,
         model_package_arn=model_package_arn,
-        account=account,
+        account=account_id,
         session=session,
     )
 

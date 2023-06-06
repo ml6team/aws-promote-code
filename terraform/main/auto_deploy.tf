@@ -12,7 +12,7 @@ data "aws_iam_policy_document" "assume_role" {
       type = "Service"
       # sagemaker also needs to be able to assume this role,
       # because it runs inside the lambda function
-      identifiers = ["lambda.amazonaws.com", "sagemaker.amazonaws.com"]
+      identifiers = ["lambda.amazonaws.com"]
     }
   }
 }
@@ -27,12 +27,6 @@ resource "aws_iam_role" "iam_for_lambda" {
 resource "aws_iam_role_policy_attachment" "lambda_cloudwatch_access" {
   role       = aws_iam_role.iam_for_lambda.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
-# allows lambda full SageMaker Access for Deploying the Endpoint
-resource "aws_iam_role_policy_attachment" "lambda_sagermaker_full_access" {
-  role       = aws_iam_role.iam_for_lambda.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_s3_access" {
