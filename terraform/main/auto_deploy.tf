@@ -10,8 +10,6 @@ data "aws_iam_policy_document" "assume_role" {
 
     principals {
       type = "Service"
-      # sagemaker also needs to be able to assume this role,
-      # because it runs inside the lambda function
       identifiers = ["lambda.amazonaws.com"]
     }
   }

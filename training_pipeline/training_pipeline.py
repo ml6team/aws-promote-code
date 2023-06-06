@@ -21,6 +21,7 @@ from sagemaker.huggingface.model import HuggingFaceModel
 from sagemaker.workflow.model_step import ModelStep
 from sagemaker.workflow.pipeline_experiment_config import PipelineExperimentConfig
 from sagemaker.workflow.pipeline_context import PipelineSession
+from sagemaker.workflow.steps import CacheConfig
 
 from aws_profiles import UserProfiles
 
@@ -57,7 +58,7 @@ def get_pipeline(pipeline_name: str, profile_name: str, region: str) -> Pipeline
     py_version = "py38"
     requirement_dependencies = ["images/train/requirements.txt"]
 
-    cache_config = None  # CacheConfig(enable_caching=True, expire_after="30d")
+    cache_config = CacheConfig(enable_caching=False, expire_after="30d")
 
     trial_name = "trial-run-" + datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
     pipeline_experiment_config = PipelineExperimentConfig(pipeline_name, trial_name)
@@ -332,9 +333,6 @@ def create_pipeline(pipeline_name, profile, region):
     iam = session.client("iam")
     role = iam.get_role(RoleName=f"{account_id}-sagemaker-exec")["Role"]["Arn"]
     pipeline.upsert(role_arn=role)
-
-    # execution = pipeline.start()
-    # execution = execution.wait()
 
 
 def run_pipeline(pipeline_name: str, profile_name: str = None) -> None:
