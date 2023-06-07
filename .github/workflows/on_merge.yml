@@ -2,7 +2,7 @@ name: Staging build pipeline
 on:
   push:
     branches:
-      - dev
+      - main
   pull_request:
 jobs:
   build-staging:

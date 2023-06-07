@@ -17,6 +17,21 @@ variable "region" {
   type        = string
 }
 
+variable "dev_account_id" {
+  description = "The account ID of the 'dev' account"
+  type        = string
+}
+
+variable "staging_account_id" {
+  description = "The account ID of the 'staging' account"
+  type        = string
+}
+
+variable "prod_account_id" {
+  description = "The account ID of the 'prod' account"
+  type        = string
+}
+
 /******************************************
 	AWS provider configuration
  *****************************************/
@@ -56,19 +71,19 @@ data "aws_iam_policy_document" "allow_access_from_another_account" {
     # dev
     principals {
       type        = "AWS"
-      identifiers = ["157261447749"]
+      identifiers = [var.dev_account_id]
     }
 
     # staging
     principals {
       type        = "AWS"
-      identifiers = ["381667332649"]
+      identifiers = [var.staging_account_id]
     }
 
     # prod
     principals {
       type        = "AWS"
-      identifiers = ["343975642840"]
+      identifiers = [var.var.prod_account_id]
     }
 
     actions = [

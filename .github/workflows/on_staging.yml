@@ -6,7 +6,7 @@ name: Staging deploy pipeline
 on:
   push:
     branches:
-      - dev
+      - main
   pull_request:
 jobs:
   deploy-staging:
@@ -41,6 +41,6 @@ jobs:
         working-directory: ./training_pipeline
         run: python upload_datatset.py
 
-      - name: Deploy pipeline from registry in [staging]
+      - name: Create training pipeline in [staging]
         working-directory: ./training_pipeline
         run: python training_pipeline.py -- action create
