@@ -31,7 +31,7 @@ jobs:
           role-to-assume: arn:aws:iam::381667332649:role/381667332649-github-full-access
 
       - name: Build all resources in [staging] with terraform
-        working-directory: ./training_pipeline/terraform/main
+        working-directory: ./terraform/main
         run: |
           terraform init
           terraform workspace select staging
