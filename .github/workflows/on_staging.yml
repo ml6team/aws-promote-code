@@ -37,7 +37,7 @@ jobs:
           terraform workspace select staging
           terraform apply -auto-approve --var-file environment/staging.tfvars
 
-      - name: Upload training data to S3
+      - name: Upload training data to S3 bucket
         working-directory: ./training_pipeline
         run: python upload_datatset.py
 
