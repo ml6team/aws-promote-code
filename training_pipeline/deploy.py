@@ -27,16 +27,16 @@ def get_latest_model(
         model_package_arns = [
             d for d in model_package_arns if d["ModelApprovalStatus"] == "Approved"
         ]
-        approved_str = " approved"
+        approved_str = "approved"
 
     if len(model_package_arns) != 0:
         model_package_arn = model_package_arns[0]["ModelPackageArn"]
-        print(f"The latest{approved_str} model-arn is: {model_package_arn}")
+        print(f"The latest {approved_str} model-arn is: {model_package_arn}")
         return model_package_arn
 
     else:
         print(
-            f"There is no{approved_str} model in the model-group '{model_package_group_name}'"
+            f"There is no {approved_str} model in the model-group '{model_package_group_name}'"
         )
 
 
