@@ -329,7 +329,7 @@ def create_pipeline(pipeline_name, profile, region):
     json.loads(pipeline.definition())
 
     session = boto3.Session(profile_name=profile) if profile else boto3.Session()
-    account_id = userProfiles.get_profile_id(profile)
+    account_id = session.client("sts").get_caller_identity().get("Account")
     iam = session.client("iam")
     role = iam.get_role(RoleName=f"{account_id}-sagemaker-exec")["Role"]["Arn"]
     pipeline.upsert(role_arn=role)
