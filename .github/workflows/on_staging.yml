@@ -43,4 +43,4 @@ jobs:
 
       - name: Create training pipeline in [staging]
         working-directory: ./training_pipeline
-        run: python training_pipeline.py -- action create
+        run: python training_pipeline.py --action create
