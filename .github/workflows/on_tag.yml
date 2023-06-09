@@ -34,23 +34,19 @@ jobs:
           aws-region: eu-west-3
           role-to-assume: arn:aws:iam::343975642840:role/343975642840-github-full-access
 
-      - name: Perform Action with Tag Name
-        run: |
-          echo "RELEASE_VERSION=${GITHUB_REF}"
-          echo ${{ github.ref }}
-
-
-      - name: Build all resources in ${{ github.ref }}" with terraform
+      - name: Build all resources with terraform
         working-directory: ./terraform/main
         run: |
+          TAG_NAME=${{ github.ref }}
+          ENV_NAME=${TAG_NAME#refs/tags/} # Remove the 'refs/tags/' prefix
           terraform init
-          terraform workspace select ${{ github.ref }}
-          terraform apply -auto-approve --var-file environment/${{ github.ref }}.tfvars
+          terraform workspace select "$ENV_NAME"
+          terraform apply -auto-approve --var-file environment/"$ENV_NAME".tfvars
 
       - name: Upload training data to S3 bucket
         working-directory: ./training_pipeline
         run: python upload_dataset.py
 
-      - name: Create training pipeline in ${{ env.GITHUB_REF }}
+      - name: Create training pipeline
         working-directory: ./training_pipeline
         run: python training_pipeline.py --action create
