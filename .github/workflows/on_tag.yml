@@ -1,13 +1,11 @@
-name: Staging deploy pipeline
-# on:
-#   label:
-#     types: [staging]
-#   pull_request:
+name: Deploy to [staging/prod]
 on:
   push:
     branches:
       - main
-  pull_request:
+    tags:
+      - staging
+      - prod
 jobs:
   deploy-staging:
     runs-on: ubuntu-latest
@@ -25,22 +23,30 @@ jobs:
         run: pip install -r ./training_pipeline/requirements.txt
 
       - name: Login to [staging] account
+        if: startsWith(github.ref, 'refs/tags/staging')
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-region: eu-west-3
           role-to-assume: arn:aws:iam::381667332649:role/381667332649-github-full-access
 
-      - name: Build all resources in [staging] with terraform
+      - name: Login to [prod] account
+        if: startsWith(github.ref, 'refs/tags/prod')
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: eu-west-3
+          role-to-assume: arn:aws:iam::343975642840:role/343975642840-github-full-access
+
+      - name: Build all resources in ${{ env.GITHUB_REF }} with terraform
         working-directory: ./terraform/main
         run: |
           terraform init
-          terraform workspace select staging
-          terraform apply -auto-approve --var-file environment/staging.tfvars
+          terraform workspace select ${{ env.GITHUB_REF }}
+          terraform apply -auto-approve --var-file environment/${{ env.GITHUB_REF }}.tfvars
 
       - name: Upload training data to S3 bucket
         working-directory: ./training_pipeline
         run: python upload_dataset.py
 
-      - name: Create training pipeline in [staging]
+      - name: Create training pipeline in ${{ env.GITHUB_REF }}
         working-directory: ./training_pipeline
         run: python training_pipeline.py --action create
