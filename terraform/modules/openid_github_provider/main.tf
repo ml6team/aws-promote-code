@@ -10,10 +10,10 @@ resource "aws_iam_openid_connect_provider" "github_openid_provider" {
 
 resource "aws_iam_role" "github_access_role" {
   name               = "${var.account}-github-full-access"
-  assume_role_policy = data.aws_iam_policy_document.sagemaker_assume_role.json
+  assume_role_policy = data.aws_iam_policy_document.assume_policy.json
 }
 
-data "aws_iam_policy_document" "sagemaker_assume_role" {
+data "aws_iam_policy_document" "assume_policy" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
 
