@@ -13,7 +13,7 @@ This project has 3 different environments and a total of 4 AWS accounts:
 # 2. Authentication setup
 This project has 4 different accounts that need to be setup manually. All other resources while be managed with Terraform.
 
-After creating the accounts, we need to configure a AWS config-file with the credentials. This is needed for local developing und testing on the different accounts. To differentiate between the accounts we use so-called profiles. The config-file with the profiles is located in `~/.aws/config` and looks like this:
+After creating the accounts, we need to configure a AWS config-file with the credentials. This is needed for local developing und testing on the different accounts. To differentiate between the accounts we use so-called profiles. The config-file with these profiles is located in `~/.aws/config` and looks like this:
 
 ```
 [default]
@@ -36,25 +36,36 @@ region=us-west-2
 [Details on AWS credential-file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 
 ## 2.1 Update Account-ID and repository references
-Besides the `config` file there are a couple of other places where we manually have to update our account-ids:
-- `terraform/main/environment`:
-    - `dev.tfvars`
-    - `staging.tfvars`
-    - `prod.tfvars`
-- `terraform/operations/environment/operations.tfvars`
-- `training_pipeline/profiles.conf`
-- `.github/workflows/on_tag.yml`
+Besides the `config` file there are a couple of other files, where we manually have to update our account-ids:
+```
+.
+├── .github
+│   └── workflows
+│       └── on_tag.yml
+├── terraform
+│   ├── main
+│   │   └── environment
+│   │       ├── dev.tfvars
+│   │       ├── staging.tfvars
+│   │       └── prod.tfvars
+│   └── operations
+│        └── environment
+│            └── operations.tfvars
+├── training_pipeline
+│   └── profiles.conf
+└── ...
+```
 
-The next step is to update the reference to our repository for the GitHub-actions authentication in the file `terraform/modules/openid_github_provider/main.tf`. Here you need to change the value *["repo:ml6team/aws-promote-code:*"]* to the name of your repo, so GitHub can assume the needed role:
+The next step is to update the reference to our repository for the GitHub-actions authentication in the file `terraform/modules/openid_github_provider/main.tf`. Here you need to change the value *"repo:ml6team/aws-promote-code:*"* to the name of your repo, so GitHub can assume the needed role:
 
-```HCL
+```YAML
 data "aws_iam_policy_document" "assume_policy" {
   statement {
     ...
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:ml6team/aws-promote-code:*"]
+      values   = ["repo:ml6team/aws-promote-code:*"] 
     }
     ...
   }
@@ -65,19 +76,25 @@ This rule ensures that only GitHub actions run from your repo can assume this ro
 # 3. Terraform
 
 ## 3.1 Setup Terraform backend
-The first step of setting up Terraform, is to create a remote backend on the `operations` account. This is done by running the following command from the `terraform/backend` folder:
+The first step of setting up Terraform, is to create a remote backend for the Terraform-State on the `operations` account. This is done by running the following command from the `terraform/backend` folder:
 ```
 terraform init
 terraform apply --var-file ../operations/environment/operations.tfvars
 ```
 
 After this backend is created, we need to update the backend references inside our modules, as they can only be hardcoded. This means updating the `bucket` value in the following files:
-- terraform/main/backend.tf
-- terraform/operations/backend.tf
+```
+.
+└── terraform
+    ├── main
+    │   └── backend.tf
+    └── operations
+         └── backend.tf
+```
 
 Now you are ready to create the resources on the other accounts
 ## 3.2 Setup operations artifacts
-Besides the Terraform-backend the operations account also hosts the different Docker-images in an Elastic-Container-Registry (ECR). Additionally the access rights for GitHub which are needed to run our CICD are created.
+Besides the Terraform-backend the operations account also hosts the different Docker-images in an Elastic-Container-Registry (ECR). Additionally the access rights for GitHub, which are needed to run our CICD, are created.
 
 Create the resources by running the following command from the `terraform/operations` folder:
 ```
@@ -85,29 +102,29 @@ terraform init
 terraform apply -var-file="environment/operations.tfvars"
 ```
 
-## 3.3 Setup dev environment
-To setup our dev environment we will work inside the `terraform/main` folder. To differentiate between the three environments (dev, staging, prod) we will be working with **Terraform-Workspaces**. This means we can use the same Terraform configuration for all three environments and also have the individual Terraform-States in the same backend. 
-First we create three Terraform-workspaces inside the `terraform/main` folder by running:
+## 3.3 Setup Terraform workspaces
+To differentiate between the three environments (dev, staging, prod) we will be working with **Terraform-Workspaces**. This means we can use the same Terraform configuration for all three environments and also have the individual Terraform-States in the same backend. 
+We create the three Terraform-workspaces inside the `terraform/main` folder by running:
 ```
 terraform workspace new dev
 terraform workspace new staging
 terraform workspace new prod
 ```
-
-Then we will activate the workspaces and create our artifacts:
+## 3.4 Deploy dev environment
+To deploy our artifacts in the dev-environment we will activate the workspace and create our artifacts:
 ```
 terraform workspace select dev
 terraform init
 terraform apply -var-file="environment/dev.tfvars" -var="enable_profile=true"
 ```
-With the flag `-var-file` we specify which variables we want to use to create our artifacts. By setting the variable `enable_profile` as true, we tell Terraform to use the dev-profile we created in the [Authentication section](#2-authentication-setup). Because these Terraform files we also be used inside our [CICD-Pipeline](#4-cicd-pipeline-with-git-actions) the default setting is to ignore/disable the profile config, as it will not be available when run inside the pipeline. 
+With the flag `-var-file` we specify which variables we want to use to create our artifacts. By setting the variable `enable_profile` as true, we tell Terraform to use the dev-profile we created in the [Authentication section](#2-authentication-setup). Because these Terraform files will also be used inside our [CICD-Pipeline](#4-cicd-pipeline-with-git-actions) the default setting is to ignore/disable the profile config, as it will not be available when run inside the pipeline. 
 
-Your dev environment is now ready for creating and running your training pipeline. For further details see the [Training-Pipeline README](./training_pipeline/README.md).
+Your dev-environment is now ready for creating and running your training pipeline. For further details see the [Training-Pipeline README](./training_pipeline/README.md).
 
 # 4. CICD Pipeline with Git actions
-For Continues Integration and Continues Deployment (CICD) we are using GitHub actions. They automatically build and deploy all changes which are made to the `main` branch in the **staging** environment and after that in the **production** environment.
+After we have made code changes in the dev-environment, we want to deploy these changes into staging and production. For Continues Integration and Continues Deployment (CICD) we are using GitHub actions. They automatically build and deploy all changes which are made to the `main` branch in the **staging** environment and after that in the **production** environment.
 
-To trigger the deployment add the tag to you current commit on the `main` branch. In this case the `stagining` tag:
+To trigger the deployment add the tag to you current commit/merge on the `main` branch. In this case the `staging` tag:
 ```
 git tag staging
 git push origin staging
