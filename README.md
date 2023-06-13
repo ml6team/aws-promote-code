@@ -1,81 +1,122 @@
-# AWS Artifact - Training-Pipeline
+# AWS MLOps Artifact by ML6
+In this repository ML6 presents a template for MLOps projects in AWS. Here we want to show the way of working at ML6, where we promote code thru different environments instead of models. This has multiple benefits:
+- Model and supporting code such as inference pipelines can follow the same staging pattern.
+- Training code is reviewed and retraining can be automated in production.
+- Staging of time series pipeline can be unified with regression/classification.
+- Production data access in development environment is not needed.
 
-## Introduction
+# 1. Project structure
+This project has 3 different environments and a total of 4 AWS accounts:
+- 3 environments / accounts: development, staging, production
+- 1 operations account which runs CI/CD and hosts artifacts that need to be promoted across environments
 
-This Sagemaker training-pipeline was created with the ML6 Nimbus boilerplate tool. In this training pipeline a pre-trained [Huggingface BERT model](https://huggingface.co/distilbert-base-uncased) is fine-tuned on a text-classification task of [Medical Transcriptions](https://www.kaggle.com/datasets/tboyle10/medicaltranscriptions).
+# 2. Authentication setup
+This project has 4 different accounts that need to be setup manually. All other resources while be managed with Terraform.
 
-## 1. Generate resources
+After creating the accounts, we need to configure a AWS config-file with the credentials. This is needed for local developing und testing on the different accounts. To differentiate between the accounts we use so-called profiles. The config-file with the profiles is located in `~/.aws/config` and looks like this:
 
-To get started, prepare all the AWS resources that need to be created by applying the generated Terraform configuration. You can do this by running the following command from within the `terraform/main` folder:
 ```
-terraform apply --var-file ../environment/project.tfvars
+[default]
+aws_access_key_id=foo
+aws_secret_access_key=bar
+region=us-west-2
+
+[profile dev]
+...
+
+[profile staging]
+...
+
+[profile prod]
+...
+
+[profile operations]
+...
+```
+[Details on AWS credential-file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
+
+## 2.1 Update Account-ID and repository references
+Besides the `config` file there are a couple of other places where we manually have to update our account-ids:
+- `terraform/main/environment`:
+    - `dev.tfvars`
+    - `staging.tfvars`
+    - `prod.tfvars`
+- `terraform/operations/environment/operations.tfvars`
+- `training_pipeline/profiles.conf`
+- `.github/workflows/on_tag.yml`
+
+The next step is to update the reference to our repository for the GitHub-actions authentication in the file `terraform/modules/openid_github_provider/main.tf`. Here you need to change the value *["repo:ml6team/aws-promote-code:*"]* to the name of your repo, so GitHub can assume the needed role:
+
+```HCL
+data "aws_iam_policy_document" "assume_policy" {
+  statement {
+    ...
+    condition {
+      test     = "StringLike"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:ml6team/aws-promote-code:*"]
+    }
+    ...
+  }
+}
+```
+This rule ensures that only GitHub actions run from your repo can assume this role.
+
+# 3. Terraform
+
+## 3.1 Setup Terraform backend
+The first step of setting up Terraform, is to create a remote backend on the `operations` account. This is done by running the following command from the `terraform/backend` folder:
+```
+terraform init
+terraform apply --var-file ../operations/environment/operations.tfvars
 ```
 
-After this, install the requirements by running:
-```
-pip install -r requirements.txt
-```
+After this backend is created, we need to update the backend references inside our modules, as they can only be hardcoded. This means updating the `bucket` value in the following files:
+- terraform/main/backend.tf
+- terraform/operations/backend.tf
 
-## 2. Upload the data
-The train and test data is split and uploaded to the Sagemaker S3 default bucket and will be used to run the training pipeline. Do this by running the following command:
+Now you are ready to create the resources on the other accounts
+## 3.2 Setup operations artifacts
+Besides the Terraform-backend the operations account also hosts the different Docker-images in an Elastic-Container-Registry (ECR). Additionally the access rights for GitHub which are needed to run our CICD are created.
+
+Create the resources by running the following command from the `terraform/operations` folder:
 ```
-python upload_dataset.py
-```
-
-## 3. Build custom docker image
-
-Some of the pipeline steps require a base docker image. You can use pre-build Images from Sagemaker or you can build your own. By running the following command, we build and register our own image to AWS Elastic Container Registry (ECR):
-
-```bash
-sh images/train/build_and_push.sh
+terraform init
+terraform apply -var-file="environment/operations.tfvars"
 ```
 
-## 4. Running the pipeline
-
-To run the training pipeline, start the pipeline job with:
+## 3.3 Setup dev environment
+To setup our dev environment we will work inside the `terraform/main` folder. To differentiate between the three environments (dev, staging, prod) we will be working with **Terraform-Workspaces**. This means we can use the same Terraform configuration for all three environments and also have the individual Terraform-States in the same backend. 
+First we create three Terraform-workspaces inside the `terraform/main` folder by running:
 ```
-python training_pipeline.py
-```
-
-The training pipeline steps are described in detail in the following table:
-
-| Nr | Step name | Description |
-| --------------- | --------------- | --------------- |
-| 1 | preprocess-data | The training and test data is loaded from the S3 bucket as Pandas DataFrames. The column 'transcription' is the text training input and is tokenized with the Huggingface [AutoTokenizer](https://huggingface.co/docs/transformers/model_doc/auto#transformers.AutoTokenizer). The column 'medical_specialty' is the classification target and is encoded numerically. Both training and test data are saved as NumPy Arrays to the S3 bucket and made available to other pipeline steps as input.|
-| 2 | train-model | The pre-trained [Huggingface BERT model](https://huggingface.co/distilbert-base-uncased) is fine-tuned on the training data. The Training and Test data are loaded as a PyTorch Dataset. For training the 'AdamW' optimizer with a learning rate of '1e-5' is used, the model is evaluated on the test data every epoch and the metrics are tracked with SageMaker Experiments. After training the model weights are saved to the S3 bucket.|
-| 3 | register-model | Every trained model is registered to the SageMaker Model Registry in a Model Group. |
-| 4 | eval-model | After training the model is evaluated on the test data and the results are used for the accuracy check. If the prerequisites are meet the 'approve-model' step is run.|
-| 5 | approve-model | The model status of the registered model in the Model Group is updated to 'approved' and now can be used to deploy a Model endpoint or for a Batch Transformation Job.|
-
-
-![Training Pipeline Image](/readme_images/training_pipeline.png)
-
-The status of the pipeline run can be tracked inside the Sagemaker Studio **Pipelines**. Also under **Experiments** the training and test metrics are tracked and can be displayed as Graphs.
-
-## 5. Model deployment
-
-You can deploy a registered model version by running the following command. Keep in mind that only models which have been approved can be deployed.
-```
-python deploy.py --model-version 1
-```
-Alternatively you can run without providing a model version and the latest approved model will be picked automatically:
-```
-python deploy.py
+terraform workspace new dev
+terraform workspace new staging
+terraform workspace new prod
 ```
 
-The model is deployed as a Sagemaker Endpoint.
-
-## 6. Model inference
-
-For testing model inference the Notebook `test.ipynb` is used. There the model inference for single inputs, but also for batch-inference can be tested.
-
-## Contributing
-
-We use [poetry](https://python-poetry.org/docs/) and [pre-commit](https://pre-commit.com/) to 
-enable a smooth developer flow. Run the following commands to set up your development environment:
-
-```commandline
-pip install poetry
-poetry install
-pre-commit install
+Then we will activate the workspaces and create our artifacts:
 ```
+terraform workspace select dev
+terraform init
+terraform apply -var-file="environment/dev.tfvars" -var="enable_profile=true"
+```
+With the flag `-var-file` we specify which variables we want to use to create our artifacts. By setting the variable `enable_profile` as true, we tell Terraform to use the dev-profile we created in the [Authentication section](#2-authentication-setup). Because these Terraform files we also be used inside our [CICD-Pipeline](#4-cicd-pipeline-with-git-actions) the default setting is to ignore/disable the profile config, as it will not be available when run inside the pipeline. 
+
+Your dev environment is now ready for creating and running your training pipeline. For further details see the [Training-Pipeline README](./training_pipeline/README.md).
+
+# 4. CICD Pipeline with Git actions
+For Continues Integration and Continues Deployment (CICD) we are using GitHub actions. They automatically build and deploy all changes which are made to the `main` branch in the **staging** environment and after that in the **production** environment.
+
+To trigger the deployment add the tag to you current commit on the `main` branch. In this case the `stagining` tag:
+```
+git tag staging
+git push origin staging
+```
+
+Remember that after the initial creation of a tag, you need to add the `-f` flag to update the tag and trigger the deployment again:
+```
+git tag -f staging
+git push -f origin staging
+```
+
+For deployment to `production` simply change the tag name.
