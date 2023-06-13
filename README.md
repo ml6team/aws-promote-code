@@ -1,4 +1,11 @@
-# AWS MLOps Artifact by ML6
+
+<h1 align="center">AWS MLOps Artifact by ML6 </h1>
+<div style="display: flex; justify-content: center;">
+  <img src="readme_images/ML6_black_round.png" alt="Image 1" width="60px" style="margin-right: 10px;">
+  <img src="https://skillicons.dev/icons?i=aws" alt="Image 2" width="60px">
+</div>
+<br>
+
 In this repository ML6 presents a template for MLOps projects in AWS. Here we want to show the way of working at ML6, where we promote code thru different environments instead of models. This has multiple benefits:
 - Model and supporting code such as inference pipelines can follow the same staging pattern.
 - Training code is reviewed and retraining can be automated in production.
