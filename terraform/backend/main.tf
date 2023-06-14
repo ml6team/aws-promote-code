@@ -67,29 +67,17 @@ resource "aws_s3_bucket_policy" "allow_access_from_another_account" {
 
 data "aws_iam_policy_document" "allow_access_from_another_account" {
   statement {
-
-    # dev
     principals {
-      type        = "AWS"
-      identifiers = [var.dev_account_id]
+      type = "AWS"
+      identifiers = [
+        var.dev_account_id,     # dev
+        var.staging_account_id, # staging
+        var.prod_account_id,    # prod
+      ]
     }
-
-    # staging
-    principals {
-      type        = "AWS"
-      identifiers = [var.staging_account_id]
-    }
-
-    # prod
-    principals {
-      type        = "AWS"
-      identifiers = [var.var.prod_account_id]
-    }
-
     actions = [
       "*"
     ]
-
     resources = [
       aws_s3_bucket.terraform_state.arn,
       "${aws_s3_bucket.terraform_state.arn}/*",
