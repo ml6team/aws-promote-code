@@ -65,12 +65,10 @@ variable "prod_account_id" {
   OpenID Connect Provider (provides GitHub actions access)
  *****************************************/
 
-
 module "openid_github_iam_operations" {
   source  = "../modules/openid_github_provider"
   account = var.account
 }
-
 
 module "openid_github_iam_dev" {
   source  = "../modules/openid_github_provider"

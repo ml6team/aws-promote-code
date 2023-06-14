@@ -20,8 +20,7 @@ resource "aws_iam_role" "eventbridge_scheduler_exec_role" {
   assume_role_policy = data.aws_iam_policy_document.eventbridge_assume_role.json
 }
 
-
-// policy for sagemaker startpipeline
+# policy for sagemaker startpipeline
 data "aws_iam_policy_document" "sagemaker_startpipeline_policy_doc" {
   statement {
     effect = "Allow"
