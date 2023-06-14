@@ -10,8 +10,6 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 
-# from sagemaker_containers.beta.framework import worker, encoders
-
 from utils.ml_pipeline_components import get_model, MyTokenizer, MyDataset
 from utils import config
 

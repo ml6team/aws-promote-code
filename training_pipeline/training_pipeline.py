@@ -252,7 +252,6 @@ def get_pipeline(pipeline_name: str, profile_name: str, region: str) -> Pipeline
     # Step 5: Approve model
     # ======================================================
 
-    # script_approve = HuggingFaceProcessor(
     script_approve = ScriptProcessor(
         command=["python3"],
         image_uri=custom_image_uri,
