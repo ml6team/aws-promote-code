@@ -27,9 +27,5 @@ jobs:
           role-to-assume: arn:aws:iam::123971416876:role/123971416876-github-full-access
 
       - name: Build Docker containers and push to ECR
-        # working-directory: ./training_pipeline
-        run: |
-          cd ./training_pipeline
-          ./images/lambda/build_and_push.sh
-          ./images/train/build_and_push.sh
-
+        working-directory: ./training_pipeline
+        run: ./images/build_and_push_all.sh
