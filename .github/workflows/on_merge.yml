@@ -29,6 +29,7 @@ jobs:
       - name: Build Docker containers and push to ECR
         working-directory: ./training_pipeline
         run: |
-          bash images/lambda/build_and_push.sh
-          bash images/train/build_and_push.sh
+          ls
+          ./images/lambda/build_and_push.sh
+          ./images/train/build_and_push.sh
 
