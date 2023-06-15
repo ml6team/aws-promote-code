@@ -84,7 +84,7 @@ python deploy.py --profile dev
 
 # 6. Model inference
 
-For testing model inference the Notebook `training_pipeline/test.ipynb` is used. There the model inference for single inputs, but also for batch-inference can be tested.
+To test the model endpoint and create a Batch Transformation use the [Inference Notebook](/training_pipeline/test.ipynb).
 
 # 7. Automatic retraining
 It is common to retrain Machine Learning models after a certain time or if certain measures indicate a decrease in prediction quality. In this project automatic retraining is simply triggered every week. This is done by a **AWS EventBridge Schedule** and is by default only enabled in the *production* account.
