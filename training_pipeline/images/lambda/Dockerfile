@@ -1,7 +1,7 @@
 FROM public.ecr.aws/lambda/python:3.8
 
 # Install the function's dependencies 
-COPY requirements.txt .
+COPY images/lambda/requirements.txt .
 RUN  pip3 install -r requirements.txt --target "${LAMBDA_TASK_ROOT}"
 
 # Copy function code
