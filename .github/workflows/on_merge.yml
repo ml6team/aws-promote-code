@@ -28,4 +28,4 @@ jobs:
 
       - name: Build Docker containers and push to ECR
         working-directory: ./training_pipeline
-        run: ./images/build_and_push_all.sh
+        run: bash images/build_and_push_all.sh
