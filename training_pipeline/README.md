@@ -19,6 +19,12 @@ This README describes the manual setup of the SageMaker pipeline and all needed 
 
 **!! NOTE !!** General setup steps for the different accounts (dev, staging, prod, operations) from the main [README](../README.md) need to be performed before following these steps.
 
+# Architecture (dev)
+
+In the following diagram we display all components that are needed to run the SageMaker training pipeline in the development environment. We go step by step thru all the files that need to be run. 
+
+![Training Pipeline Image](/readme_images/dev_architecture_setup.png)
+
 # 1. Setup
 
 Our resources for the dev environment were already created in the main setup, which means we only need to install some requirements before we can begin:
@@ -26,14 +32,7 @@ Our resources for the dev environment were already created in the main setup, wh
 pip install -r requirements.txt
 ```
 
-# 2. Upload the data
-The  medical dataset is split and uploaded to a S3-bucket and will be used as input to the training pipeline. Do this by running the following command:
-```
-python upload_dataset.py --profile dev
-```
-If you don't provide a specific bucket name (via the flag `--bucket-name`), the **Sagemaker Default bucket** is chosen as the location of your training data.
-
-# 3. Build custom Docker image
+# 2. Build custom Docker image
 
 Some of the steps in our training-pipeline require specific Docker images. Additionally we need a Docker image for the Lambda function which executes our [automatic model deployment](#5-model-deployment). The following command builds and pushes both those images to the AWS Elastic-Container-Registry (ECR) on our *operations* account. Run the shell script from the `/training_pipeline` folder:
 ```bash
@@ -41,6 +40,13 @@ sh images/build_and_push_all.sh
 ```
 
 The script automatically pulls the Account-ID of the *operations* account from the `profiles.conf` file and uses it to specify the account where the ECR is located.
+
+# 3. Upload the data
+The  medical dataset is split and uploaded to a S3-bucket and will be used as input to the training pipeline. Do this by running the following command:
+```
+python upload_dataset.py --profile dev
+```
+If you don't provide a specific bucket name (via the flag `--bucket-name`), the **Sagemaker Default bucket** is chosen as the location of your training data.
 
 # 4. Creating and running the pipeline
 
@@ -66,7 +72,6 @@ In both commands we use the `--profile` flag to specify which account from our c
 | 4 | eval-model | After training the model is evaluated on the test data and the results are used for the accuracy check. If the prerequisites are meet the 'approve-model' step is run.|
 | 5 | approve-model | The model status of the registered model in the Model Group is updated to 'approved' and now can be used to deploy a Model endpoint or for a Batch Transformation Job.|
 
-
 ![Training Pipeline Image](/readme_images/training_pipeline.png)
 
 The status of the pipeline run can be tracked inside the Sagemaker Studio **Pipelines**. Also under **Experiments** the training and test metrics are tracked and can be displayed as Graphs.
@@ -84,7 +89,7 @@ python deploy.py --profile dev
 
 # 6. Model inference
 
-To test the model endpoint and create a Batch Transformation use the [Inference Notebook](/training_pipeline/test.ipynb).
+To test the model endpoint and create a Batch Transformation Job use the [Inference Notebook](/training_pipeline/test.ipynb).
 
 # 7. Automatic retraining
 It is common to retrain Machine Learning models after a certain time or if certain measures indicate a decrease in prediction quality. In this project automatic retraining is simply triggered every week. This is done by a **AWS EventBridge Schedule** and is by default only enabled in the *production* account.
