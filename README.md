@@ -54,23 +54,23 @@ region=us-west-2
 [Details on AWS credential-file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 
 ## 2.1 Update Account-ID and repository references
-Besides the `config` file there are a couple of other files, where we manually have to update our Account-ID's:
+Besides the `config` file there are a couple of other files, where we manually have to update our Account-ID's. All six files bellow need to be updated:
 ```bash
 .
 ├── .github
 │   └── workflows
-│       └── on_tag.yml
+│       └── on_tag.yml              #1
 ├── terraform
 │   ├── main
 │   │   └── environment
-│   │       ├── dev.tfvars
-│   │       ├── staging.tfvars
-│   │       └── prod.tfvars
+│   │       ├── dev.tfvars          #2
+│   │       ├── staging.tfvars      #3
+│   │       └── prod.tfvars         #4
 │   └── operations
 │        └── environment
-│            └── operations.tfvars
+│            └── operations.tfvars  #5
 ├── training_pipeline
-│   └── profiles.conf
+│   └── profiles.conf               #6
 └── ...
 ```
 
@@ -142,16 +142,22 @@ Your dev-environment is now ready for creating and running your training pipelin
 # 4. CI/CD Pipeline with Git actions
 Once code changes have been implemented in the development environment, our workflow involves deploying these changes into the staging and production environments. For seamless CI/CD processes, we rely on GitHub Actions. These automated workflows are triggered to build and deploy any modifications made to the main branch initially in the `staging` environment and subsequently in the `production` environment. This ensures a streamlined and efficient deployment pipeline, enabling rapid and reliable software releases.
 
-To trigger the deployment add the tag to you current commit/merge on the `main` branch. In this case the `staging` tag:
+The complete CI/CD flow is visualized in the following diagram:
+![CICD_diagram](/readme_images/CICD_diagram.png)
+
+After you have reviewed a PR and decided to merge you feature-branch into your main-branch artifacts get automatically build. Next, as shown in the diagram add the `staging-tag` to your commit/merge on the `main` branch to trigger the deployment:
 ```
 git tag staging
 git push origin staging
 ```
 
-Remember that after the initial creation of a tag, you need to add the `-f` flag to update the tag and trigger the deployment again:
+Remember that after the initial creation of a tag, you need to add the `-f` flag to update the tag and trigger the deployment at later times:
 ```
 git tag -f staging
 git push -f origin staging
 ```
-
-For deployment to `production` simply change the tag name.
+At this point test can be run on your staging environment. After these test ran successfully you can add the `production-tag` to simply commit/merge:
+```
+git tag prod
+git push origin staging
+```
