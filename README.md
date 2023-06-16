@@ -156,8 +156,8 @@ Remember that after the initial creation of a tag, you need to add the `-f` flag
 git tag -f staging
 git push -f origin staging
 ```
-At this point test can be run on your staging environment. After these test ran successfully you can add the `production-tag` to simply commit/merge:
+At this point tests can be run on your staging environment. After these test ran successfully you can add the `production-tag` to deploy to production:
 ```
 git tag prod
-git push origin staging
+git push origin prod
 ```
