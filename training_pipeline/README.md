@@ -2,7 +2,7 @@
 
 ## Introduction
 
-In this SageMaker pipeline a pre-trained [Huggingface BERT-model](https://huggingface.co/distilbert-base-uncased) is fine-tuned on a **text-classification task** of [Medical Transcriptions](https://www.kaggle.com/datasets/tboyle10/medicaltranscriptions). This dataset was chosen because medical data often contains sensitive information and one of the benefits of promoting code instead of models is that the production data is not needed in the dev environment. The table bellow shows some examples of the dataset:
+In this SageMaker pipeline, a pre-trained [Huggingface BERT-model](https://huggingface.co/distilbert-base-uncased) is fine-tuned on a **text-classification task** of [Medical Transcriptions](https://www.kaggle.com/datasets/tboyle10/medicaltranscriptions). The selected dataset was specifically chosen due to the sensitive nature of medical data. One of the key advantages of code promotion over model promotion is the ability to avoid the need for production data in the development environment. Below is a table showcasing a few examples from the dataset:
 
 | class (target) | description (input) |
 | --------------- | --------------- |
@@ -15,19 +15,19 @@ In total there are 40 different classes:
 ['Allergy / Immunology',  'Autopsy',  'Bariatrics',  'Cardiovascular / Pulmonary',  'Chiropractic',  'Consult - History and Phy.',  'Cosmetic / Plastic Surgery',  'Dentistry', 'Dermatology', 'Diets and Nutritions', 'Discharge Summary', 'ENT - Otolaryngology', 'Emergency Room Reports', 'Endocrinology', 'Gastroenterology', 'General Medicine', 'Hematology - Oncology', 'Hospice - Palliative Care', 'IME-QME-Work Comp etc.', 'Lab Medicine - Pathology', 'Letters', 'Nephrology', 'Neurology', 'Neurosurgery', 'Obstetrics / Gynecology', 'Office Notes', 'Ophthalmology', 'Orthopedic', 'Pain Management', 'Pediatrics - Neonatal', 'Physical Medicine - Rehab', 'Podiatry', 'Psychiatry / Psychology', 'Radiology', 'Rheumatology', 'SOAP / Chart / Progress Notes', 'Sleep Medicine', 'Speech - Language', 'Surgery', 'Urology']
 ```
 
-This README describes the manual setup of the SageMaker pipeline and all needed artifacts in the **development** (dev) environment.
+This README provides a comprehensive guide outlining the necessary steps to manually execute the Training Pipeline and deploy an endpoint. 
 
 **!! NOTE !!** General setup steps for the different accounts (dev, staging, prod, operations) from the main [README](../README.md) need to be performed before following these steps.
 
 # Architecture (dev)
 
-In the following diagram we display all components that are needed to run the SageMaker training pipeline in the development environment. We go step by step thru all the files that need to be run. 
+The diagram below illustrates all the essential components required to execute the SageMaker training pipeline in the development environment. This step-by-step guide will walk you through the process, highlighting the specific files that need to be executed to ensure a smooth and successful training pipeline run.
 
 ![Training Pipeline Image](/readme_images/dev_architecture_setup.png)
 
 # 1. Setup
 
-Our resources for the dev environment were already created in the main setup, which means we only need to install some requirements before we can begin:
+As the main setup process has already created the necessary resources for the development environment, the following steps require only the installation of specific requirements before proceeding:
 ```
 pip install -r requirements.txt
 ```
@@ -42,7 +42,7 @@ sh images/build_and_push_all.sh
 The script automatically pulls the Account-ID of the *operations* account from the `profiles.conf` file and uses it to specify the account where the ECR is located.
 
 # 3. Upload the data
-The  medical dataset is split and uploaded to a S3-bucket and will be used as input to the training pipeline. Do this by running the following command:
+The  medical dataset is split and uploaded to a S3-bucket and will be used as input to the training pipeline. We split our data into train, test, and evaluation sets to assess and validate the performance of our model on unseen data and avoid overfitting. Upload and split the data by running the following command:
 ```
 python upload_dataset.py --profile dev
 ```
@@ -92,7 +92,7 @@ python deploy.py --profile dev
 To test the model endpoint and create a Batch Transformation Job use the [Inference Notebook](/training_pipeline/test.ipynb).
 
 # 7. Automatic retraining
-It is common to retrain Machine Learning models after a certain time or if certain measures indicate a decrease in prediction quality. In this project automatic retraining is simply triggered every week. This is done by a **AWS EventBridge Schedule** and is by default only enabled in the *production* account.
+It is common to retrain Machine Learning models after a certain time or if certain measures indicate a decrease in prediction quality. In this project automatic retraining is triggered on a time schedule of seven days. This is done by a **AWS EventBridge Schedule** and is by default only enabled in the *production* account.
 
 # Contributing
 
