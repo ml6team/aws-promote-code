@@ -5,6 +5,7 @@
 provider "aws" { # default profile/alias
   shared_config_files = ["~/.aws/config"]
   profile             = "operations"
+  region              = var.region
 }
 
 # access to other accounts
@@ -13,18 +14,21 @@ provider "aws" {
   alias               = "dev"
   shared_config_files = ["~/.aws/config"]
   profile             = "dev"
+  region              = var.region
 }
 
 provider "aws" {
   alias               = "staging"
   shared_config_files = ["~/.aws/config"]
   profile             = "staging"
+  region              = var.region
 }
 
 provider "aws" {
   alias               = "prod"
   shared_config_files = ["~/.aws/config"]
   profile             = "prod"
+  region              = var.region
 }
 
 /******************************************

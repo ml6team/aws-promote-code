@@ -5,6 +5,7 @@
 provider "aws" {
   shared_config_files = var.enable_profile ? ["~/.aws/config"] : null
   profile             = var.enable_profile ? var.profile : null
+  region              = var.region
 }
 
 /******************************************
