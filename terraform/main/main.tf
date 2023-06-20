@@ -5,6 +5,7 @@
 provider "aws" {
   shared_config_files = var.enable_profile ? ["~/.aws/config"] : null
   profile             = var.enable_profile ? var.profile : null
+  region              = var.region
 }
 
 /******************************************
@@ -35,6 +36,11 @@ variable "enable_profile" {
   description = "Enable to use AWS profile for authentication"
   type        = bool
   default     = false
+}
+
+variable "operations_account" {
+  description = "AWS operations account id"
+  type        = string
 }
 
 /******************************************

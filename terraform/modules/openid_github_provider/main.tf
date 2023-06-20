@@ -1,3 +1,7 @@
+#################################################
+# OpenID provider for GitHub and IAM role with Full Access
+#################################################
+
 resource "aws_iam_openid_connect_provider" "github_openid_provider" {
   url = "https://token.actions.githubusercontent.com"
 

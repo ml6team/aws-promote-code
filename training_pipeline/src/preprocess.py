@@ -35,11 +35,6 @@ def preprocess():
     np.save(os.path.join("/opt/ml/processing/output/val", "x_val.npy"), x_test)
     np.save(os.path.join("/opt/ml/processing/output/val", "y_val.npy"), y_test)
 
-    # TODO save as (huggingface) dataset
-
-    # save num_of_labels
-    # np.save(os.path.join("/opt/ml/processing/output/labels", "num_labels.npy"), encoder.num_cat)
-
 
 if __name__ == "__main__":
     preprocess()

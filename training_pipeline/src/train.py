@@ -42,8 +42,6 @@ def parse_args():
     parser.add_argument(
         "--sm-model-dir", type=str, default=os.environ.get("SM_MODEL_DIR")
     )
-
-    # args = parser.parse_args()
     return parser.parse_known_args()
 
 

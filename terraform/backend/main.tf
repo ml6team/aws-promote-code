@@ -39,6 +39,7 @@ variable "prod_account_id" {
 provider "aws" {
   shared_config_files = ["~/.aws/config"]
   profile             = "operations"
+  region              = var.region
 }
 
 /******************************************

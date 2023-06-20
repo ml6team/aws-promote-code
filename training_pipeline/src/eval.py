@@ -16,7 +16,6 @@ from utils import config
 def eval_model():
     dataset = load_dataset("/opt/ml/processing/val", "val")
     dataloader = DataLoader(dataset, shuffle=True, batch_size=10)
-    # num_labels = load_num_labels("/opt/ml/processing/labels")
     num_labels = len(config.MEDICAL_CATEGORIES)
 
     logging.info("Fetching model")
@@ -30,7 +29,7 @@ def eval_model():
 
     logging.info("Evaluating model")
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    logging.info(f"Training on device: {device}")
+    logging.info(f"Evaluating on device: {device}")
 
     model.eval()
     model.to(device)
