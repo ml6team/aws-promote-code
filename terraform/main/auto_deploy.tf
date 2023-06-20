@@ -47,7 +47,7 @@ resource "aws_lambda_function" "lambda_sagemaker_deploy" {
   description      = "Deploys the latest and approved model"
   package_type     = "Image"
   role             = aws_iam_role.iam_for_lambda.arn
-  image_uri        = "123971416876.dkr.ecr.${var.region}.amazonaws.com/lambda-image:latest"
+  image_uri        = "${var.operations_account}.dkr.ecr.${var.region}.amazonaws.com/lambda-image:latest"
   timeout          = 600                                                     # deployment can take 5 to 10min
   source_code_hash = filebase64sha256("./../../training_pipeline/deploy.py") # triggers update
 }

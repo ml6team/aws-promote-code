@@ -38,6 +38,11 @@ variable "enable_profile" {
   default     = false
 }
 
+variable "operations_account" {
+  description = "AWS operations account id"
+  type        = string
+}
+
 /******************************************
   VPC configuration
  *****************************************/
