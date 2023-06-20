@@ -1,4 +1,4 @@
-account                = "123971416876"
+account                = "343975642840"
 profile                = "operations"
 region                 = "eu-west-3"
 scheduled_pipeline_run = "ENABLED"
