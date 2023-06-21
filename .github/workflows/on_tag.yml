@@ -5,7 +5,7 @@ on:
       - staging
       - prod
 jobs:
-  deploy-staging:
+  deploy:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
