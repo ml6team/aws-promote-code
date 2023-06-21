@@ -6,6 +6,7 @@ from datetime import datetime
 
 import boto3
 from sagemaker.processing import ScriptProcessor
+from sagemaker.pytorch.processing import PyTorchProcessor
 from sagemaker.workflow.steps import ProcessingStep, TrainingStep
 from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.properties import PropertyFile
@@ -53,6 +54,8 @@ def get_pipeline(pipeline_name: str, profile_name: str, region: str) -> Pipeline
     )
 
     gpu_instance_type = "ml.g4dn.xlarge"
+    cpu_instance_type = "ml.m5.large"
+
     pytorch_version = "1.9.0"
     transformers_version = "4.11.0"
     py_version = "py38"
@@ -67,7 +70,7 @@ def get_pipeline(pipeline_name: str, profile_name: str, region: str) -> Pipeline
     # Define Pipeline Parameters
     # ======================================================
 
-    epoch_count = ParameterInteger(name="epochs", default_value=5)
+    epoch_count = ParameterInteger(name="epochs", default_value=1)
     batch_size = ParameterInteger(name="batch_size", default_value=10)
     learning_rate = ParameterFloat(name="learning_rate", default_value=1e-5)
 
@@ -75,8 +78,9 @@ def get_pipeline(pipeline_name: str, profile_name: str, region: str) -> Pipeline
     # Step 1: Load and preprocess the data
     # ======================================================
 
-    script_preprocess = HuggingFaceProcessor(
-        instance_type=gpu_instance_type,
+    script_preprocess = PyTorchProcessor(
+        framework_version="1.8",
+        instance_type=cpu_instance_type,
         image_uri=custom_image_uri,
         instance_count=1,
         base_job_name="preprocess-script",
@@ -255,7 +259,7 @@ def get_pipeline(pipeline_name: str, profile_name: str, region: str) -> Pipeline
     script_approve = ScriptProcessor(
         command=["python3"],
         image_uri=custom_image_uri,
-        instance_type=gpu_instance_type,
+        instance_type=cpu_instance_type,
         instance_count=1,
         base_job_name="script-approve",
         role=role,
