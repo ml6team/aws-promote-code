@@ -58,7 +58,7 @@ resource "aws_scheduler_schedule" "training_pipeline_scheduler" {
     mode = "OFF"
   }
 
-  schedule_expression = "rate(7 days)"
+  schedule_expression = "rate(3 days)"
 
   target {
     arn      = "arn:aws:sagemaker:eu-west-3:${var.account}:pipeline/training-pipeline"
@@ -66,7 +66,7 @@ resource "aws_scheduler_schedule" "training_pipeline_scheduler" {
     sagemaker_pipeline_parameters {
       pipeline_parameter {
         name  = "epochs"
-        value = "10"
+        value = "1"
       }
     }
   }
