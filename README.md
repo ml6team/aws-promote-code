@@ -7,15 +7,15 @@
 
 Within this repository, [ML6](https://www.ml6.eu/) presents a comprehensive template for MLOps projects on AWS. Our aim is to showcase ML6's preferred approach, where **code promotion takes precedence over model promotion** across different environments. This approach offers several notable advantages:
 
-- Model and supporting code such as inference pipelines can follow the same staging pattern.
+- Model and supporting code, such as inference pipelines, can follow the same staging pattern.
 - Training code is reviewed and retraining can be automated in production.
-- Staging of time series pipeline can be unified with regression/classification.
-- Production data access in development environment is not needed.
+- Staging of time series pipelines can be unified with regression/classification.
+- Production-data access in development environment is not needed.
 
 By embracing this code promotion strategy, ML6 aims to establish a standardized and efficient MLOps workflow, promoting best practices in model development, deployment, and maintenance on the AWS platform.
 
 # MLOps project
-The content of this MLOps project-template is a Machine-Learning Pipeline in AWS SageMaker. The creation and deployment of pipelines represent standard practices within the MLOps domain and requires certain functionalities from your Cloud Provider. With SageMaker, we gain access to a comprehensive set of functionalities and can implement our ML model training pipeline, as well as experiment-tracking, re-training, model-deployment and other typical MLOps tasks. For further information see the [Training-Pipeline-ReadMe](/training_pipeline/README.md), where everything is explained in detail.
+The content of this MLOps project-template is a Machine-Learning Pipeline in AWS SageMaker. The creation and deployment of pipelines represent standard practices within the MLOps domain and requires certain functionalities from your Cloud Provider. With SageMaker, we gain access to a comprehensive set of functionalities and can implement our ML model training pipeline, as well as experiment-tracking, re-training, model-deployment and other typical MLOps tasks. For further information, see the [Training-Pipeline-ReadMe](/training_pipeline/README.md), where everything is explained in detail.
 
 # Project structure
 This project comprises three distinct environments and a total of four AWS accounts, each serving specific purposes:
@@ -36,7 +36,7 @@ By employing this account structure, we can ensure proper segregation of respons
 If you want to use this project template as your starting point, you need to perform the following steps:
 # 1. Authentication setup
 ## 1.1 Config file
-As mentioned there are four different AWS accounts in this project, which need to be setup manually. All  resources inside these accounts will be managed with the infrastructure-as-code tool [Terraform](#3-terraform).
+As mentioned, there are four different AWS accounts in this project, that need to be setup manually. All  resources inside these accounts will be managed with the infrastructure-as-code tool [Terraform](#3-terraform).
 
 Once these accounts have been created, it is necessary to configure an AWS config-file with the appropriate credentials. This configuration is crucial for local development and testing across the different accounts. To distinguish between the accounts, *profiles* are utilized. The configuration file, located at ~/.aws/config, is structured as follows:
 
@@ -61,7 +61,7 @@ region=us-west-2
 [Details on AWS credential-file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 
 ## 1.2 Update Account-ID and repository references
-Besides the `config` file there are a couple of other files, where we manually have to update our Account-ID's. All Account-ID's in the six files bellow need to be updated:
+Besides the `config` file, there are a couple of other files, where we manually have to update our Account-ID's. All Account-ID's in the six files below need to be updated:
 ```bash
 .
 ├── .github
@@ -101,7 +101,7 @@ data "aws_iam_policy_document" "assume_policy" {
 In this project, we use **Terraform** to manage our infrastructure because it enables us to define infrastructure as code, ensure consistency, and easily scale our infrastructure. With Terraform, we can efficiently manage multiple environments, such as development, staging, and production, with consistent configurations and reproducible deployments, simplifying our infrastructure management across the different stages of the project lifecycle.
 
 ## 2.1 Setup Terraform backend
-The first step of setting up Terraform, is to create a remote backend for the Terraform-State on the `operations` account. This also done with Terraform by running the following commands from the `terraform/backend` folder:
+The first step of setting up Terraform, is to create a remote backend for the Terraform-State on the `operations` account. This is also done with Terraform by running the following commands from the `terraform/backend` folder:
 ```
 terraform init
 terraform apply --var-file="../operations/environment/operations.tfvars"
@@ -117,9 +117,9 @@ After this backend is created, we need to update the backend references inside o
         └── backend.tf
 ```
 
-Now you are ready to create the resources on the other accounts
+Now you are ready to create the resources on the other accounts.
 ## 2.2 Setup operations artifacts
-Besides the Terraform-backend the operations account also hosts the different Docker-images in an Elastic-Container-Registry (ECR). Additionally the access rights for GitHub, which are needed to run our CI/CD, are created.
+Besides the Terraform-backend the operations account also hosts the different Docker-images in an Elastic-Container-Registry (ECR). Additionally, the access rights for GitHub, which are needed to run our CI/CD, are created.
 
 Create the resources on the operations account by running the following command from the `terraform/operations` folder:
 ```
@@ -144,15 +144,15 @@ terraform apply -var-file="environment/dev.tfvars" -var="enable_profile=true"
 ```
 With the flag `-var-file` we specify which variables we want to use to create our artifacts. By setting the variable `enable_profile` as true, we tell Terraform to use the dev-profile we created in the [Authentication section](#2-authentication-setup). Because these Terraform files will also be used inside our [CI/CD-Pipeline](#4-cicd-pipeline-with-git-actions) the default setting is to ignore/disable the profile config, as it will not be available when run inside the pipeline. 
 
-Your dev-environment is now ready for creating and running your training pipeline. For further details see the [Training-Pipeline README](./training_pipeline/README.md).
+Your dev-environment is now ready for creating and running your training pipeline. For further details, see the [Training-Pipeline README](./training_pipeline/README.md).
 
-# 3. CI/CD Pipeline with Git actions
+# 3. CI/CD Pipeline with Git Actions
 Once code changes have been implemented in the development environment, our workflow involves deploying these changes into the staging and production environments. For seamless CI/CD processes, we rely on GitHub Actions. These automated workflows are triggered to build and deploy any modifications made to the main branch initially in the `staging` environment and subsequently in the `production` environment. This ensures a streamlined and efficient deployment pipeline, enabling rapid and reliable software releases.
 
 The complete CI/CD process is visualized in the following diagram:
 ![CICD_diagram](/readme_images/CICD_diagram.png)
 ## CI/CD Process
-The development of new features in your MLOps project happens on the dev-account inside a dedicated feature-branch. By opening up a Pull-Request (PR) to the main-branch the changes in your code get reviewed. After the changes are approved the feature-branch is merged into your main-branch. This triggers the Git action to automatically build the artifacts in the staging-environment.
+The development of new features in your MLOps project happens on the dev-account inside a dedicated feature-branch. By opening up a Pull-Request (PR) to the main-branch the changes in your code get reviewed. After the changes are approved, the feature-branch is merged into your main-branch. This triggers the Git action to automatically build the artifacts in the staging-environment.
 
 Next, as shown in the diagram, the `staging-tag` is added to the commit, to trigger the deployment:
 ```
@@ -165,7 +165,7 @@ Remember that after the initial creation of a tag, you need to add the `-f` flag
 git tag -f staging <commit-id>
 git push -f origin staging
 ```
-At this point tests can be run on your staging environment. After these test ran successfully you can add the `production-tag` to finally deploy to production:
+At this point, tests can be run in your staging environment. After these tests ran successfully you can add the `production-tag` to finally deploy to production:
 ```
 git tag prod <commit-id>
 git push origin prod
