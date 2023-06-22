@@ -1,6 +1,6 @@
 <div style="display: flex; justify-content: center;">
-  <img src="readme_images/ML6_black_round.png" alt="Image 1" width="40px" style="margin-right: 10px;">
-  <img src="https://skillicons.dev/icons?i=aws" alt="Image 2" width="40px">
+  <a href="https://www.ml6.eu/"><img src="readme_images/ML6_black_round.png" alt="Image 1" width="40px" style="margin-right: 10px;"></a>
+  <a href="https://aws.amazon.com/"><img src="https://skillicons.dev/icons?i=aws" alt="Image 2" width="40px"></a>
 </div>
 <br>
 <h1 align="center">AWS MLOps Artifact by ML6 </h1>
