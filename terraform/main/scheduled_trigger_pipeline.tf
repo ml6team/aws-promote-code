@@ -66,7 +66,7 @@ resource "aws_scheduler_schedule" "training_pipeline_scheduler" {
     sagemaker_pipeline_parameters {
       pipeline_parameter {
         name  = "epochs"
-        value = "3"
+        value = "10"
       }
     }
   }
