@@ -4,7 +4,8 @@
 </div>
 <br>
 <h1 align="center">AWS MLOps Artifact by ML6 </h1>
-Within this repository, ML6 presents a comprehensive template for MLOps projects on AWS. Our aim is to showcase ML6's preferred approach, where code promotion takes precedence over model promotion across different environments. This approach offers several notable advantages:
+
+Within this repository, [ML6](https://www.ml6.eu/) presents a comprehensive template for MLOps projects on AWS. Our aim is to showcase ML6's preferred approach, where **code promotion takes precedence over model promotion** across different environments. This approach offers several notable advantages:
 
 - Model and supporting code such as inference pipelines can follow the same staging pattern.
 - Training code is reviewed and retraining can be automated in production.
@@ -35,7 +36,7 @@ By employing this account structure, we can ensure proper segregation of respons
 If you want to use this project template as your starting point, you need to perform the following steps:
 # 1. Authentication setup
 ## 1.1 Config file
-As mentioned we have four different AWS accounts in this project, which need to be setup manually. All other resources while be managed with [Terraform](#3-terraform).
+As mentioned there are four different AWS accounts in this project, which need to be setup manually. All  resources inside these accounts will be managed with the infrastructure-as-code tool [Terraform](#3-terraform).
 
 Once these accounts have been created, it is necessary to configure an AWS config-file with the appropriate credentials. This configuration is crucial for local development and testing across the different accounts. To distinguish between the accounts, *profiles* are utilized. The configuration file, located at ~/.aws/config, is structured as follows:
 
@@ -97,7 +98,7 @@ data "aws_iam_policy_document" "assume_policy" {
 ```
 
 # 2. Setup infrastructure
-In this project, we use **Terraform** to manage our infrastructure because it enables us to define infrastructure as code, ensure consistency, and easily scale our infrastructure. With Terraform, we can efficiently manage multiple environments, such as development, staging, and production, with consistent configurations and reproducible deployments, simplifying our infrastructure management across different stages of the project lifecycle.
+In this project, we use **Terraform** to manage our infrastructure because it enables us to define infrastructure as code, ensure consistency, and easily scale our infrastructure. With Terraform, we can efficiently manage multiple environments, such as development, staging, and production, with consistent configurations and reproducible deployments, simplifying our infrastructure management across the different stages of the project lifecycle.
 
 ## 2.1 Setup Terraform backend
 The first step of setting up Terraform, is to create a remote backend for the Terraform-State on the `operations` account. This also done with Terraform by running the following commands from the `terraform/backend` folder:
@@ -120,7 +121,7 @@ Now you are ready to create the resources on the other accounts
 ## 2.2 Setup operations artifacts
 Besides the Terraform-backend the operations account also hosts the different Docker-images in an Elastic-Container-Registry (ECR). Additionally the access rights for GitHub, which are needed to run our CI/CD, are created.
 
-Create the resources by running the following command from the `terraform/operations` folder:
+Create the resources on the operations account by running the following command from the `terraform/operations` folder:
 ```
 terraform init
 terraform apply -var-file="environment/operations.tfvars"
@@ -128,7 +129,7 @@ terraform apply -var-file="environment/operations.tfvars"
 
 ## 2.3 Setup Terraform workspaces
 To effectively distinguish between the three environments (dev, staging, prod), we will utilize **Terraform Workspaces**. This approach allows us to utilize a single Terraform configuration for all environments while maintaining separate Terraform states within the same backend. By leveraging Terraform Workspaces, we can seamlessly manage and deploy infrastructure across multiple environments with improved organization and ease of maintenance.
-We create the three Terraform-workspaces inside the `terraform/main` folder by running:
+We create the three Terraform-workspaces inside the `terraform/main` folder by running the following commands:
 ```
 terraform workspace new dev
 terraform workspace new staging
@@ -148,23 +149,25 @@ Your dev-environment is now ready for creating and running your training pipelin
 # 3. CI/CD Pipeline with Git actions
 Once code changes have been implemented in the development environment, our workflow involves deploying these changes into the staging and production environments. For seamless CI/CD processes, we rely on GitHub Actions. These automated workflows are triggered to build and deploy any modifications made to the main branch initially in the `staging` environment and subsequently in the `production` environment. This ensures a streamlined and efficient deployment pipeline, enabling rapid and reliable software releases.
 
-The complete CI/CD flow is visualized in the following diagram:
+The complete CI/CD process is visualized in the following diagram:
 ![CICD_diagram](/readme_images/CICD_diagram.png)
+## CI/CD Process
+The development of new features in your MLOps project happens on the dev-account inside a dedicated feature-branch. By opening up a Pull-Request (PR) to the main-branch the changes in your code get reviewed. After the changes are approved the feature-branch is merged into your main-branch. This triggers the Git action to automatically build the artifacts in the staging-environment.
 
-After you have reviewed a PR and decided to merge you feature-branch into your main-branch, the artifacts get automatically build by the Git actions. Next, as shown in the diagram add the `staging-tag` to your commit/merge on the `main` branch to trigger the deployment:
+Next, as shown in the diagram, the `staging-tag` is added to the commit, to trigger the deployment:
 ```
-git tag staging
+git tag staging <commit-id>
 git push origin staging
 ```
 
 Remember that after the initial creation of a tag, you need to add the `-f` flag to update the tag and trigger the deployment at later times:
 ```
-git tag -f staging
+git tag -f staging <commit-id>
 git push -f origin staging
 ```
 At this point tests can be run on your staging environment. After these test ran successfully you can add the `production-tag` to finally deploy to production:
 ```
-git tag prod
+git tag prod <commit-id>
 git push origin prod
 ```
 

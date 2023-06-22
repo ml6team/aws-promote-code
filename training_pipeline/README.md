@@ -1,4 +1,4 @@
-# AWS Artifact - Manual setup for running the training pipeline in the dev environment
+# AWS Artifact - Setup for running the training pipeline in the dev environment
 
 ## Introduction
 
@@ -66,10 +66,10 @@ In both commands we use the `--profile` flag to specify which account from our c
 
 | Nr | Step name | Description |
 | --------------- | --------------- | --------------- |
-| 1 | preprocess-data | The training and test data is loaded from the S3 bucket as Pandas DataFrames. The column 'transcription' is the text training input and is tokenized with the Huggingface [AutoTokenizer](https://huggingface.co/docs/transformers/model_doc/auto#transformers.AutoTokenizer). The column 'medical_specialty' is the classification target and is encoded numerically. Both training and test data are saved as NumPy Arrays to the S3 bucket and made available to other pipeline steps as input.|
+| 1 | preprocess-data | The training, testing and evaluation data is loaded from the S3 bucket as Pandas DataFrames. The column 'transcription' is the text training input and is tokenized with the Huggingface [AutoTokenizer](https://huggingface.co/docs/transformers/model_doc/auto#transformers.AutoTokenizer). The column 'medical_specialty' is the classification target and is encoded numerically. Both training and test data are saved as NumPy Arrays to the S3 bucket and made available to other pipeline steps as input.|
 | 2 | train-model | The pre-trained [Huggingface BERT model](https://huggingface.co/distilbert-base-uncased) is fine-tuned on the training data. The Training and Test data are loaded as a PyTorch Dataset. For training the 'AdamW' optimizer with a learning rate of '1e-5' is used, the model is evaluated on the test data every epoch and the metrics are tracked with SageMaker Experiments. After training the model weights are saved to the S3 bucket.|
 | 3 | register-model | Every trained model is registered to the SageMaker Model Registry in a Model Group. |
-| 4 | eval-model | After training the model is evaluated on the test data and the results are used for the accuracy check. If the prerequisites are meet the 'approve-model' step is run.|
+| 4 | eval-model | After training the model is evaluated on the evaluation data and the results are used for the accuracy check. If the prerequisites are meet the 'approve-model' step is run.|
 | 5 | approve-model | The model status of the registered model in the Model Group is updated to 'approved' and now can be used to deploy a Model endpoint or for a Batch Transformation Job.|
 
 ![Training Pipeline Image](/readme_images/training_pipeline.png)
@@ -82,14 +82,14 @@ For automatic model deployment every time a new model is registered and approved
 ```
 python deploy.py --profile dev --model-version 1
 ```
-Alternatively you can run without providing a model version and the latest approved model will be picked automatically:
+Alternatively you can run the command without providing a model-version and the latest approved model will be picked automatically:
 ```
 python deploy.py --profile dev
 ```
 
 # 6. Model inference
 
-To test the model endpoint and create a Batch Transformation Job use the [Inference Notebook](/training_pipeline/test.ipynb).
+To test the deployed model-endpoint or create a Batch Transformation Job use the [Inference Notebook](/training_pipeline/test.ipynb).
 
 # 7. Automatic retraining
 It is common to retrain Machine Learning models after a certain time or if certain measures indicate a decrease in prediction quality. In this project automatic retraining is triggered on a time schedule of seven days. This is done by a **AWS EventBridge Schedule** and is by default only enabled in the *production* account.
