@@ -3,7 +3,6 @@
   <a href="https://aws.amazon.com/"><img src="https://skillicons.dev/icons?i=aws" alt="Image 2" width="40px"></a>
 </div>
 <h1 align="center">Promote Code <br> An AWS MLOps project-template by ML6</h1>
-<h2 align="center"></h2>
 
 Within this repository, [ML6](https://www.ml6.eu/) presents a comprehensive template for MLOps projects on AWS. Our aim is to showcase ML6's preferred approach, where **code promotion takes precedence over model promotion** across different environments. This approach offers several notable advantages:
 
