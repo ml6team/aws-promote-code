@@ -2,8 +2,8 @@
   <a href="https://www.ml6.eu/"><img src="readme_images/ML6_black_round.png" alt="Image 1" width="40px" style="margin-right: 10px;"></a>
   <a href="https://aws.amazon.com/"><img src="https://skillicons.dev/icons?i=aws" alt="Image 2" width="40px"></a>
 </div>
-<br>
-<h1 align="center">AWS MLOps Artifact by ML6 </h1>
+<h1 align="center">Promote Code <br> An AWS MLOps project-template by ML6</h1>
+<h2 align="center"></h2>
 
 Within this repository, [ML6](https://www.ml6.eu/) presents a comprehensive template for MLOps projects on AWS. Our aim is to showcase ML6's preferred approach, where **code promotion takes precedence over model promotion** across different environments. This approach offers several notable advantages:
 
@@ -119,7 +119,7 @@ After this backend is created, we need to update the backend references inside o
 
 Now you are ready to create the resources on the other accounts.
 ## 2.2 Setup operations artifacts
-Besides the Terraform-backend the operations account also hosts the different Docker-images in an Elastic-Container-Registry (ECR). Additionally, the access rights for GitHub, which are needed to run our CI/CD, are created.
+Next we have to setup the artifacts in the operations account. Besides the Terraform-backend, it also hosts the different Docker-images in an Elastic-Container-Registry (ECR). Additionally, the access rights for GitHub, which are needed to run our CI/CD, are created.
 
 Create the resources on the operations account by running the following command from the `terraform/operations` folder:
 ```
